@@ -5,14 +5,15 @@
 package entity;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  *
  * @author Admin
  */
-import java.time.LocalDateTime;
-
 public class Blog {
+    private static final DateTimeFormatter DISPLAY_DATE =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private int blogId;
     private int authorId;
     private String authorName;
@@ -48,6 +49,19 @@ public class Blog {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public String getCreatedAtText() {
+        return formatDisplayDate(createdAt);
+    }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public String getUpdatedAtText() {
+        return formatDisplayDate(updatedAt);
+    }
+
+    private String formatDisplayDate(LocalDateTime value) {
+        if (value == null) {
+            return "";
+        }
+        return value.format(DISPLAY_DATE);
+    }
 }

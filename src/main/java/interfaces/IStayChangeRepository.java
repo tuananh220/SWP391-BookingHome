@@ -22,10 +22,18 @@ public interface IStayChangeRepository {
     Booking findEligibleBooking(int bookingId, int customerId)
             throws SQLException;
 
+    Booking findEligibleBookingForRequest(int requestId, int customerId)
+            throws SQLException;
+
     BigDecimal sumNightPrices(int bookingId, LocalDate fromDate,
             LocalDate toDate) throws SQLException;
 
     int create(StayChangeRequest request) throws SQLException;
+
+    StayChangeRequest findByIdAndCustomerId(int requestId, int customerId)
+            throws SQLException;
+
+    boolean updatePending(StayChangeRequest request) throws SQLException;
 
     List<StayChangeRequest> findByCustomerId(int customerId)
             throws SQLException;

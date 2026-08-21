@@ -5,6 +5,7 @@
 package controller;
 
 import entity.Booking;
+import entity.StayChangeRequest;
 import entity.User;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -62,18 +63,34 @@ public class CustomerStayChangeFormController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        Integer bookingId = ParseUtil.toPositiveInteger(
-                request.getParameter("bookingId")
+        Integer requestId = ParseUtil.toPositiveInteger(
+            request.getParameter("requestId")
         );
+        Integer bookingId = ParseUtil.toPositiveInteger(
+            request.getParameter("bookingId")
+        );
+        User user = getUser(request);
+        StayChangeService service = new StayChangeService();
+        StayChangeRequest existing = requestId == null
+            ? null : service.getCustomerRequest(requestId, user.getUserId());
+        if (requestId != null && (existing == null
+            || !"Pending".equals(existing.getStatus()))) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                "Chỉ có thể chỉnh sửa yêu cầu đang chờ xử lý.");
+            return;
+        }
+        if (existing != null) {
+            bookingId = existing.getBookingId();
+        }
         if (bookingId == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
-        User user = getUser(request);
-        StayChangeService service = new StayChangeService();
-        Booking booking = service.getEligibleBooking(
-                bookingId, user.getUserId()
-        );
+        Booking booking = existing == null
+            ? service.getEligibleBooking(bookingId, user.getUserId())
+            : service.getEligibleBookingForRequest(
+                requestId, user.getUserId()
+            );
         if (booking == null) {
             response.sendError(
                     HttpServletResponse.SC_BAD_REQUEST,
@@ -82,6 +99,7 @@ public class CustomerStayChangeFormController extends HttpServlet {
             return;
         }
         request.setAttribute("booking", booking);
+        request.setAttribute("editRequest", existing);
         request.getRequestDispatcher(
                 "/views/customer/stay-change-form.jsp"
         ).forward(request, response);
@@ -102,10 +120,13 @@ public class CustomerStayChangeFormController extends HttpServlet {
         Integer bookingId = ParseUtil.toPositiveInteger(
                 request.getParameter("bookingId")
         );
+        Integer requestId = ParseUtil.toPositiveInteger(
+            request.getParameter("requestId")
+        );
         LocalDate requestedDate = ParseUtil.toLocalDate(
                 request.getParameter("requestedCheckOutDate")
         );
-        if (bookingId == null) {
+        if (bookingId == null && requestId == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
@@ -113,18 +134,31 @@ public class CustomerStayChangeFormController extends HttpServlet {
         User user = getUser(request);
         StayChangeService service = new StayChangeService();
         try {
-            int requestId = service.createRequest(
-                    bookingId,
-                    user.getUserId(),
-                    request.getParameter("requestType"),
-                    requestedDate,
-                    request.getParameter("customerNote")
-            );
-            if (requestId <= 0) {
-                throw new IllegalStateException("Không thể tạo yêu cầu.");
+            if (requestId != null) {
+                if (!service.updateRequest(
+                        requestId, user.getUserId(),
+                        request.getParameter("requestType"),
+                        requestedDate,
+                        request.getParameter("customerNote"))) {
+                    throw new IllegalStateException(
+                            "Không thể chỉnh sửa yêu cầu."
+                    );
+                }
+            } else {
+                int createdRequestId = service.createRequest(
+                        bookingId, user.getUserId(),
+                        request.getParameter("requestType"), requestedDate,
+                        request.getParameter("customerNote")
+                );
+                if (createdRequestId <= 0) {
+                    throw new IllegalStateException("Không thể tạo yêu cầu.");
+                }
             }
             request.getSession().setAttribute(
-                    "flashSuccess", "Đã gửi yêu cầu đến chủ nhà."
+                    "flashSuccess",
+                    requestId == null
+                    ? "Đã gửi yêu cầu đến chủ nhà."
+                    : "Đã cập nhật yêu cầu."
             );
             response.sendRedirect(
                     request.getContextPath()
@@ -132,9 +166,19 @@ public class CustomerStayChangeFormController extends HttpServlet {
             );
         } catch (IllegalArgumentException | IllegalStateException exception) {
             Booking booking = service.getEligibleBooking(
-                    bookingId, user.getUserId()
+                    bookingId == null ? 0 : bookingId, user.getUserId()
             );
+                StayChangeRequest editRequest = requestId == null
+                    ? null : service.getCustomerRequest(
+                        requestId, user.getUserId()
+                    );
+                if (editRequest != null) {
+                booking = service.getEligibleBookingForRequest(
+                    requestId, user.getUserId()
+                );
+                }
             request.setAttribute("booking", booking);
+                request.setAttribute("editRequest", editRequest);
             request.setAttribute("error", exception.getMessage());
             request.getRequestDispatcher(
                     "/views/customer/stay-change-form.jsp"

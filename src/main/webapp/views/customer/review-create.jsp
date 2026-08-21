@@ -21,7 +21,9 @@
             <section class="review-intro">
                 <p class="eyebrow">CHIA SẺ TRẢI NGHIỆM</p>
                 <h1>Đánh giá kỳ nghỉ của bạn</h1>
-                <p>Bạn đang đánh giá <strong><c:out value="${booking.homestayTitle}"/></strong>, booking #${booking.bookingId}.</p>
+                <p>Bạn đang đánh giá <strong>
+                        <c:out value="${booking.homestayTitle}"/>
+                    </strong>, booking #${booking.bookingId}.</p>
             </section>
 
             <form method="post"
@@ -30,7 +32,9 @@
                 <input type="hidden" name="bookingId" value="${booking.bookingId}">
 
                 <c:if test="${not empty requestScope.error}">
-                    <div class="notice error"><c:out value="${requestScope.error}"/></div>
+                    <div class="notice error">
+                        <c:out value="${requestScope.error}"/>
+                    </div>
                 </c:if>
 
                 <fieldset class="rating-field">
@@ -48,7 +52,9 @@
 
                 <label class="review-label">Nhận xét
                     <textarea name="comment" rows="7" maxlength="2000"
-                              placeholder="Không gian, vị trí, tiện ích và trải nghiệm của bạn..."><c:out value="${comment}"/></textarea>
+                              placeholder="Không gian, vị trí, tiện ích và trải nghiệm của bạn...">
+                        <c:out value="${comment}"/>
+                    </textarea>
                 </label>
 
                 <label class="review-label upload-box">Ảnh trải nghiệm

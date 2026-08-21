@@ -21,26 +21,36 @@
         <main class="payment-wrap">
             <section class="payment-brand-panel">
                 <p class="eyebrow">THANH TOÁN AN TOÀN</p>
-                <h1><c:out value="${payment.paymentMethodName}"/></h1>
+                <h1>
+                    <c:out value="${payment.paymentMethodName}"/>
+                </h1>
                 <p>Đây là màn hình mô phỏng thanh toán phục vụ cho project học tập. Không có khoản tiền thật nào được xử lý.</p>
-                <div class="gateway-mark"><c:out value="${payment.paymentMethodCode}"/></div>
+                <div class="gateway-mark">
+                    <c:out value="${payment.paymentMethodCode}"/>
+                </div>
             </section>
 
             <section class="payment-confirm-panel">
                 <p class="eyebrow">THÔNG TIN GIAO DỊCH</p>
                 <h2>Xác nhận thanh toán</h2>
                 <div class="payment-summary-line">
-                    <span>Booking</span><strong>#${booking.bookingId}</strong>
+                    <span>Booking</span>
+                    <strong>#${booking.bookingId}</strong>
                 </div>
                 <div class="payment-summary-line">
-                    <span>Homestay</span><strong><c:out value="${booking.homestayTitle}"/></strong>
+                    <span>Homestay</span>
+                    <strong>
+                        <c:out value="${booking.homestayTitle}"/>
+                    </strong>
                 </div>
                 <div class="payment-summary-line">
-                    <span>Thời gian</span><strong>${booking.checkInDate} → ${booking.checkOutDate}</strong>
+                    <span>Thời gian</span>
+                    <strong>${booking.checkInDate} → ${booking.checkOutDate}</strong>
                 </div>
                 <div class="payment-summary-line payment-amount">
                     <span>Số tiền</span>
-                    <strong><fmt:formatNumber value="${payment.amount}" pattern="#,##0"/> ₫</strong>
+                    <strong>
+                        <fmt:formatNumber value="${payment.amount}" pattern="#,##0"/> ₫</strong>
                 </div>
 
                 <form method="post" action="${pageContext.request.contextPath}/customer/payment">

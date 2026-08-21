@@ -5,6 +5,7 @@
 package interfaces;
 
 import entity.Booking;
+import entity.BookingNight;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -17,8 +18,19 @@ public interface IHostBookingRepository {
     List<Booking> findByHostId(int hostId, String status)
             throws SQLException;
 
+    List<Booking> findHistory(int hostId, String status, Integer homestayId,
+            java.time.LocalDate fromDate, java.time.LocalDate toDate)
+            throws SQLException;
+
+    entity.HostCancellationSummary findCancellationSummary(int hostId,
+            Integer homestayId, java.time.LocalDate fromDate,
+            java.time.LocalDate toDate) throws SQLException;
+
     Booking findByIdAndHostId(int bookingId, int hostId)
             throws SQLException;
+
+    List<BookingNight> findNightsByBookingIdAndHostId(
+            int bookingId, int hostId) throws SQLException;
 
     boolean confirmBooking(int bookingId, int hostId)
             throws SQLException;

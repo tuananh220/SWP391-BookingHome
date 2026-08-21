@@ -95,32 +95,44 @@ public class HostScheduleRepository extends DBContext
     @Override
     public boolean save(HomestaySchedule schedule, int hostId)
             throws SQLException {
-        String sql = "IF EXISTS (SELECT 1 FROM Homestays "
-                + "WHERE HomestayID = ? AND HostID = ?) "
-                + "BEGIN MERGE HomestaySchedules AS target "
-                + "USING (SELECT ? AS HomestayID, ? AS ScheduleDate) source "
-                + "ON target.HomestayID = source.HomestayID "
-                + "AND target.ScheduleDate = source.ScheduleDate "
-                + "WHEN MATCHED THEN UPDATE SET CustomPrice = ?, "
-                + "IsAvailable = ?, LockReason = ? "
-                + "WHEN NOT MATCHED THEN INSERT "
-                + "(HomestayID, ScheduleDate, CustomPrice, IsAvailable, LockReason) "
-                + "VALUES (?, ?, ?, ?, ?); END";
-
         ensureConnection();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+        String updateSql = "UPDATE hs SET CustomPrice = ?, "
+                + "IsAvailable = ?, LockReason = ? "
+                + "FROM HomestaySchedules hs "
+                + "INNER JOIN Homestays h ON h.HomestayID = hs.HomestayID "
+                + "WHERE hs.HomestayID = ? AND h.HostID = ? "
+                + "AND hs.ScheduleDate = ?";
+        try (PreparedStatement statement
+                = connection.prepareStatement(updateSql)) {
+            statement.setBigDecimal(1, schedule.getCustomPrice());
+            statement.setBoolean(2, schedule.isAvailable());
+            statement.setString(3, schedule.getLockReason());
+            statement.setInt(4, schedule.getHomestayId());
+            statement.setInt(5, hostId);
+            statement.setDate(6, Date.valueOf(schedule.getScheduleDate()));
+            if (statement.executeUpdate() > 0) {
+                return true;
+            }
+        }
+
+        String insertSql = "INSERT INTO HomestaySchedules "
+                + "(HomestayID, ScheduleDate, CustomPrice, IsAvailable, LockReason) "
+                + "SELECT ?, ?, ?, ?, ? "
+                + "WHERE EXISTS (SELECT 1 FROM Homestays "
+                + "WHERE HomestayID = ? AND HostID = ?) "
+                + "AND NOT EXISTS (SELECT 1 FROM HomestaySchedules "
+                + "WHERE HomestayID = ? AND ScheduleDate = ?)";
+        try (PreparedStatement statement
+                = connection.prepareStatement(insertSql)) {
             statement.setInt(1, schedule.getHomestayId());
-            statement.setInt(2, hostId);
-            statement.setInt(3, schedule.getHomestayId());
-            statement.setDate(4, Date.valueOf(schedule.getScheduleDate()));
-            statement.setBigDecimal(5, schedule.getCustomPrice());
-            statement.setBoolean(6, schedule.isAvailable());
-            statement.setString(7, schedule.getLockReason());
+            statement.setDate(2, Date.valueOf(schedule.getScheduleDate()));
+            statement.setBigDecimal(3, schedule.getCustomPrice());
+            statement.setBoolean(4, schedule.isAvailable());
+            statement.setString(5, schedule.getLockReason());
+            statement.setInt(6, schedule.getHomestayId());
+            statement.setInt(7, hostId);
             statement.setInt(8, schedule.getHomestayId());
             statement.setDate(9, Date.valueOf(schedule.getScheduleDate()));
-            statement.setBigDecimal(10, schedule.getCustomPrice());
-            statement.setBoolean(11, schedule.isAvailable());
-            statement.setString(12, schedule.getLockReason());
             return statement.executeUpdate() > 0;
         }
     }

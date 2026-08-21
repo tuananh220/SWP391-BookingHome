@@ -51,20 +51,54 @@ public class StayChangeRepository extends DBContext
             statement.setInt(2, customerId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
-                    Booking booking = new Booking();
-                    booking.setBookingId(resultSet.getInt("BookingID"));
-                    booking.setCustomerId(resultSet.getInt("CustomerID"));
-                    booking.setHomestayId(resultSet.getInt("HomestayID"));
-                    booking.setCheckInDate(resultSet.getDate("CheckInDate").toLocalDate());
-                    booking.setCheckOutDate(resultSet.getDate("CheckOutDate").toLocalDate());
-                    booking.setTotalGuests(resultSet.getInt("TotalGuests"));
-                    booking.setTotalAmount(resultSet.getBigDecimal("TotalAmount"));
-                    booking.setBookingStatus(resultSet.getString("BookingStatus"));
-                    booking.setPartialRefundPercentSnapshot(
-                            resultSet.getBigDecimal("PartialRefundPercentSnapshot")
-                    );
-                    booking.setHomestayTitle(resultSet.getString("HomestayTitle"));
-                    return booking;
+                    return mapEligibleBooking(resultSet);
+                }
+            }
+        }
+        return null;
+    }
+
+        private Booking mapEligibleBooking(ResultSet resultSet)
+            throws SQLException {
+        Booking booking = new Booking();
+        booking.setBookingId(resultSet.getInt("BookingID"));
+        booking.setCustomerId(resultSet.getInt("CustomerID"));
+        booking.setHomestayId(resultSet.getInt("HomestayID"));
+        booking.setCheckInDate(
+            resultSet.getDate("CheckInDate").toLocalDate()
+        );
+        booking.setCheckOutDate(
+            resultSet.getDate("CheckOutDate").toLocalDate()
+        );
+        booking.setTotalGuests(resultSet.getInt("TotalGuests"));
+        booking.setTotalAmount(resultSet.getBigDecimal("TotalAmount"));
+        booking.setBookingStatus(resultSet.getString("BookingStatus"));
+        booking.setPartialRefundPercentSnapshot(
+            resultSet.getBigDecimal("PartialRefundPercentSnapshot")
+        );
+        booking.setHomestayTitle(resultSet.getString("HomestayTitle"));
+        return booking;
+        }
+
+    @Override
+    public Booking findEligibleBookingForRequest(int requestId, int customerId)
+            throws SQLException {
+        String sql = "SELECT b.BookingID, b.CustomerID, b.HomestayID, "
+                + "b.CheckInDate, b.CheckOutDate, b.TotalGuests, "
+                + "b.TotalAmount, b.BookingStatus, "
+                + "b.PartialRefundPercentSnapshot, h.Title AS HomestayTitle "
+                + "FROM StayChangeRequests s INNER JOIN Bookings b "
+                + "ON b.BookingID = s.BookingID INNER JOIN Homestays h "
+                + "ON h.HomestayID = b.HomestayID "
+                + "WHERE s.RequestID = ? AND s.CustomerID = ? "
+                + "AND s.Status = 'Pending' AND b.BookingStatus = 'Confirmed'";
+        ensureConnection();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, requestId);
+            statement.setInt(2, customerId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return mapEligibleBooking(resultSet);
                 }
             }
         }
@@ -110,6 +144,44 @@ public class StayChangeRepository extends DBContext
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 return keys.next() ? keys.getInt(1) : 0;
             }
+        }
+    }
+
+    @Override
+    public StayChangeRequest findByIdAndCustomerId(
+            int requestId, int customerId
+    ) throws SQLException {
+        String sql = requestSelect()
+                + " WHERE s.RequestID = ? AND s.CustomerID = ?";
+        ensureConnection();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, requestId);
+            statement.setInt(2, customerId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? mapRequest(resultSet) : null;
+            }
+        }
+    }
+
+    @Override
+    public boolean updatePending(StayChangeRequest request)
+            throws SQLException {
+        String sql = "UPDATE StayChangeRequests SET RequestType = ?, "
+                + "OriginalCheckOutDate = ?, RequestedCheckOutDate = ?, "
+                + "ExtraAmount = ?, RefundAmount = ?, CustomerNote = ?, "
+                + "UpdatedAt = SYSDATETIME() WHERE RequestID = ? "
+                + "AND CustomerID = ? AND Status = 'Pending'";
+        ensureConnection();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, request.getRequestType());
+            statement.setDate(2, Date.valueOf(request.getOriginalCheckOutDate()));
+            statement.setDate(3, Date.valueOf(request.getRequestedCheckOutDate()));
+            statement.setBigDecimal(4, request.getExtraAmount());
+            statement.setBigDecimal(5, request.getRefundAmount());
+            statement.setString(6, request.getCustomerNote());
+            statement.setInt(7, request.getRequestId());
+            statement.setInt(8, request.getCustomerId());
+            return statement.executeUpdate() > 0;
         }
     }
 

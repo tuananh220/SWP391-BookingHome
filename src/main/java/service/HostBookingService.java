@@ -9,6 +9,7 @@ package service;
  * @author Admin
  */
 import entity.Booking;
+import entity.BookingNight;
 import interfaces.IHostBookingRepository;
 import repository.HostBookingRepository;
 import ultis.ValidationUtil;
@@ -52,6 +53,49 @@ public class HostBookingService {
         } catch (SQLException exception) {
             exception.printStackTrace();
             return null;
+        }
+    }
+
+    public List<BookingNight> getBookingNights(int bookingId, int hostId) {
+        try {
+            return bookingRepository.findNightsByBookingIdAndHostId(
+                    bookingId, hostId
+            );
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            return new ArrayList<BookingNight>();
+        }
+    }
+
+    public List<Booking> getHistory(int hostId, String status,
+            Integer homestayId, LocalDate fromDate, LocalDate toDate) {
+        if (!VALID_STATUSES.contains(status)) {
+            status = null;
+        }
+        if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
+            throw new IllegalArgumentException(
+                    "Ngày bắt đầu không được sau ngày kết thúc."
+            );
+        }
+        try {
+            return bookingRepository.findHistory(
+                    hostId, status, homestayId, fromDate, toDate
+            );
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            return new ArrayList<Booking>();
+        }
+    }
+
+    public entity.HostCancellationSummary getCancellationSummary(int hostId,
+            Integer homestayId, LocalDate fromDate, LocalDate toDate) {
+        try {
+            return bookingRepository.findCancellationSummary(
+                    hostId, homestayId, fromDate, toDate
+            );
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            return new entity.HostCancellationSummary();
         }
     }
 

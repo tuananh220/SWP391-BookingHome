@@ -24,13 +24,27 @@
                     <c:choose>
                         <c:when test="${not empty banner.targetUrl}">
                             <c:url value="${banner.targetUrl}" var="bannerLink"/>
-                            <a href="<c:out value='${bannerLink}'/>"><img src="<c:out value='${banner.imageUrl}'/>" alt="<c:out value='${banner.title}'/>"><c:if test="${not empty banner.title}"><span><c:out value="${banner.title}"/></span></c:if></a>
-                                </c:when>
-                                <c:otherwise>
-                            <div><img src="<c:out value='${banner.imageUrl}'/>" alt="<c:out value='${banner.title}'/>"><c:if test="${not empty banner.title}"><span><c:out value="${banner.title}"/></span></c:if></div>
-                                </c:otherwise>
-                            </c:choose>
-                        </c:forEach>
+                            <a href="<c:out value='${bannerLink}'/>">
+                                <img src="<c:out value='${banner.imageUrl}'/>" alt="<c:out value='${banner.title}'/>">
+                                <c:if test="${not empty banner.title}">
+                                    <span>
+                                        <c:out value="${banner.title}"/>
+                                    </span>
+                                </c:if>
+                            </a>
+                        </c:when>
+                        <c:otherwise>
+                            <div>
+                                <img src="<c:out value='${banner.imageUrl}'/>" alt="<c:out value='${banner.title}'/>">
+                                <c:if test="${not empty banner.title}">
+                                    <span>
+                                        <c:out value="${banner.title}"/>
+                                    </span>
+                                </c:if>
+                            </div>
+                        </c:otherwise>
+                    </c:choose>
+                </c:forEach>
             </section>
         </c:if>
 
@@ -54,7 +68,7 @@
                     </select>
                 </label>
                 <label>Nhận phòng
-                    <input type="date" name="checkIn" value="<c:out value='${param.checkIn}'/>">
+                    <input type="date" name="checkIn" id="checkIn" value="<c:out value='${param.checkIn}'/>" >
                 </label>
                 <label>Trả phòng
                     <input type="date" name="checkOut" value="<c:out value='${param.checkOut}'/>">
@@ -103,7 +117,9 @@
             </div>
 
             <c:if test="${not empty requestScope.error}">
-                <div class="alert"><c:out value="${requestScope.error}"/></div>
+                <div class="alert">
+                    <c:out value="${requestScope.error}"/>
+                </div>
             </c:if>
 
             <c:choose>
@@ -129,11 +145,20 @@
                                     <span class="guest-badge">Tối đa ${item.maxGuests} khách</span>
                                 </a>
                                 <div class="property-content">
-                                    <div class="location"><c:out value="${item.district}"/>, <c:out value="${item.city}"/></div>
-                                    <h3><a href="${pageContext.request.contextPath}/homestay-detail?id=${item.homestayId}"><c:out value="${item.title}"/></a></h3>
+                                    <div class="location">
+                                        <c:out value="${item.district}"/>, <c:out value="${item.city}"/>
+                                    </div>
+                                    <h3>
+                                        <a href="${pageContext.request.contextPath}/homestay-detail?id=${item.homestayId}">
+                                            <c:out value="${item.title}"/>
+                                        </a>
+                                    </h3>
                                     <div class="card-bottom">
-                                        <p><strong><fmt:formatNumber value="${item.pricePerNight}" pattern="#,##0"/> ₫</strong> / đêm</p>
-                                        <p class="rating">★ <fmt:formatNumber value="${item.averageRating}" maxFractionDigits="1"/> <span>(${item.reviewCount})</span></p>
+                                        <p>
+                                            <strong>
+                                                <fmt:formatNumber value="${item.pricePerNight}" pattern="#,##0"/> ₫</strong> / đêm</p>
+                                        <p class="rating">★ <fmt:formatNumber value="${item.averageRating}" maxFractionDigits="1"/> <span>(${item.reviewCount})</span>
+                                        </p>
                                     </div>
                                 </div>
                             </article>
@@ -143,5 +168,6 @@
             </c:choose>
         </main>
     </body>
+
 </html>
 

@@ -26,7 +26,9 @@
             </div>
 
             <c:if test="${not empty sessionScope.flashSuccess}">
-                <div class="notice success"><c:out value="${sessionScope.flashSuccess}"/></div>
+                <div class="notice success">
+                    <c:out value="${sessionScope.flashSuccess}"/>
+                </div>
                 <c:remove var="flashSuccess" scope="session"/>
             </c:if>
 
@@ -47,25 +49,39 @@
                                         <c:when test="${not empty booking.homestayImageUrl}">
                                             <img src="<c:out value='${booking.homestayImageUrl}'/>" alt="Homestay">
                                         </c:when>
-                                        <c:otherwise><span>HOMESTAY</span></c:otherwise>
+                                        <c:otherwise>
+                                            <span>HOMESTAY</span>
+                                        </c:otherwise>
                                     </c:choose>
                                 </div>
                                 <div class="booking-row-main">
                                     <div class="booking-row-head">
                                         <div>
                                             <small>Booking #${booking.bookingId}</small>
-                                            <h2><c:out value="${booking.homestayTitle}"/></h2>
+                                            <h2>
+                                                <c:out value="${booking.homestayTitle}"/>
+                                            </h2>
                                         </div>
-                                        <span class="booking-status status-${booking.bookingStatus}"><c:out value="${booking.bookingStatus}"/></span>
+                                        <span class="booking-status status-${booking.bookingStatus}">
+                                            <c:out value="${booking.bookingStatus}"/>
+                                        </span>
                                     </div>
                                     <div class="booking-facts">
-                                        <span><b>Nhận phòng</b>${booking.checkInDate}</span>
-                                        <span><b>Trả phòng</b>${booking.checkOutDate}</span>
-                                        <span><b>Khách</b>${booking.totalGuests}</span>
-                                        <span><b>Tổng tiền</b><fmt:formatNumber value="${booking.totalAmount}" pattern="#,##0"/> ₫</span>
+                                        <span>
+                                            <b>Nhận phòng</b>${booking.checkInDate}</span>
+                                        <span>
+                                            <b>Trả phòng</b>${booking.checkOutDate}</span>
+                                        <span>
+                                            <b>Khách</b>${booking.totalGuests}</span>
+                                        <span>
+                                            <b>Tổng tiền</b>
+                                            <fmt:formatNumber value="${booking.totalAmount}" pattern="#,##0"/> ₫</span>
                                     </div>
                                     <div class="booking-row-foot">
-                                        <span>Thanh toán: <strong><c:out value="${empty booking.paymentStatus ? 'Không phát sinh' : booking.paymentStatus}"/></strong></span>
+                                        <span>Thanh toán: <strong>
+                                                <c:out value="${empty booking.paymentStatus ? 'Không phát sinh' : booking.paymentStatus}"/>
+                                            </strong>
+                                        </span>
                                         <a href="${pageContext.request.contextPath}/customer/booking-detail?id=${booking.bookingId}">Xem chi tiết →</a>
                                     </div>
                                 </div>

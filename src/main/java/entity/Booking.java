@@ -14,6 +14,7 @@ public class Booking {
     private int customerId;
     private int homestayId;
     private Integer voucherId;
+    private String voucherCode;
     private Integer cancellationPolicyId;
     private String cancellationPolicyName;
     private Integer fullRefundDaysSnapshot;
@@ -76,6 +77,14 @@ public class Booking {
 
     public void setVoucherId(Integer voucherId) {
         this.voucherId = voucherId;
+    }
+
+    public String getVoucherCode() {
+        return voucherCode;
+    }
+
+    public void setVoucherCode(String voucherCode) {
+        this.voucherCode = voucherCode;
     }
 
     public Integer getCancellationPolicyId() {

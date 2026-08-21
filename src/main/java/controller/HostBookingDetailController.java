@@ -82,6 +82,10 @@ public class HostBookingDetailController extends HttpServlet {
 
         request.setAttribute("booking", booking);
         request.setAttribute(
+                "bookingNights",
+                service.getBookingNights(bookingId, currentUser.getUserId())
+        );
+        request.setAttribute(
                 "canProcess",
                 "Pending".equals(booking.getBookingStatus())
                 && !booking.isPaymentOnline()

@@ -23,9 +23,13 @@
             <p>Bộ khung authentication đã hoạt động. Bạn có thể tiếp tục phát triển tìm kiếm và đặt homestay.</p>
             <div class="info-card">
                 <span>Vai trò</span>
-                <strong><c:out value="${sessionScope.currentUser.roleName}"/></strong>
+                <strong>
+                    <c:out value="${sessionScope.currentUser.roleName}"/>
+                </strong>
                 <span>Email</span>
-                <strong><c:out value="${sessionScope.currentUser.email}"/></strong>
+                <strong>
+                    <c:out value="${sessionScope.currentUser.email}"/>
+                </strong>
             </div>
         </main>
     </body>

@@ -41,6 +41,30 @@ public class StayChangeService {
         }
     }
 
+    public StayChangeRequest getCustomerRequest(
+            int requestId, int customerId
+    ) {
+        try {
+            return repository.findByIdAndCustomerId(requestId, customerId);
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            return null;
+        }
+    }
+
+    public Booking getEligibleBookingForRequest(
+            int requestId, int customerId
+    ) {
+        try {
+            return repository.findEligibleBookingForRequest(
+                    requestId, customerId
+            );
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            return null;
+        }
+    }
+
     public int createRequest(int bookingId, int customerId,
             String requestType,
             LocalDate requestedCheckOutDate,
@@ -77,6 +101,56 @@ public class StayChangeService {
         } catch (SQLException exception) {
             exception.printStackTrace();
             return 0;
+        }
+    }
+
+    public boolean updateRequest(int requestId, int customerId,
+            String requestType, LocalDate requestedCheckOutDate,
+            String customerNote) {
+        StayChangeRequest existing = getCustomerRequest(
+                requestId, customerId
+        );
+        if (existing == null || !"Pending".equals(existing.getStatus())) {
+            throw new IllegalArgumentException(
+                    "Chỉ có thể chỉnh sửa yêu cầu đang chờ xử lý."
+            );
+        }
+
+        Booking booking = getEligibleBookingForRequest(
+                requestId, customerId
+        );
+        if (booking == null) {
+            throw new IllegalArgumentException(
+                    "Booking không còn đủ điều kiện thay đổi."
+            );
+        }
+        validateNote(customerNote);
+
+        StayChangeRequest request = new StayChangeRequest();
+        request.setRequestId(requestId);
+        request.setBookingId(booking.getBookingId());
+        request.setCustomerId(customerId);
+        request.setRequestType(requestType);
+        request.setOriginalCheckOutDate(booking.getCheckOutDate());
+        request.setRequestedCheckOutDate(requestedCheckOutDate);
+        request.setCustomerNote(
+                ValidationUtil.isBlank(customerNote)
+                ? null : customerNote.trim()
+        );
+
+        if ("Extension".equals(requestType)) {
+            prepareExtension(request, booking);
+        } else if ("EarlyCheckout".equals(requestType)) {
+            prepareEarlyCheckout(request, booking);
+        } else {
+            throw new IllegalArgumentException("Loại yêu cầu không hợp lệ.");
+        }
+
+        try {
+            return repository.updatePending(request);
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            return false;
         }
     }
 

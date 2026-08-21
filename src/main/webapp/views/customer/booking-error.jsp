@@ -20,7 +20,9 @@
             <div class="status-icon">!</div>
             <p class="eyebrow">ĐẶT PHÒNG CHƯA HOÀN TẤT</p>
             <h1>Không thể xử lý yêu cầu</h1>
-            <p><c:out value="${requestScope.error}"/></p>
+            <p>
+                <c:out value="${requestScope.error}"/>
+            </p>
             <div class="status-actions">
                 <a href="javascript:history.back()">Quay lại kiểm tra</a>
                 <a class="secondary" href="${pageContext.request.contextPath}/homestays">Tìm homestay khác</a>

@@ -1,0 +1,85 @@
+@startuml
+' Customer screen flow
+skinparam shadowing false
+skinparam dpi 150
+skinparam defaultFontName Arial
+skinparam activity {
+  BackgroundColor #EAF3FF
+  BorderColor #2F5D8C
+  DiamondBackgroundColor #FFF4D6
+  DiamondBorderColor #B7791F
+  StartColor #2F855A
+  EndColor #C53030
+  ArrowColor #4A5568
+}
+
+title Customer Screen Flow
+
+start
+:Home / Homestay List\n(/home or /homestays);
+
+partition "Account" {
+  if (Authenticated?) then (No)
+    :Login\n(/login);
+    if (New customer?) then (Yes)
+      :Register Account\n(/register);
+      :Login\n(/login);
+    else (No)
+    endif
+  else (Yes)
+  endif
+  :Customer Home;
+}
+
+partition "Discover and Book" {
+  :Search Homestays\n(/homestays);
+  :View Homestay Detail\n(/homestay-detail);
+  if (Book this homestay?) then (Yes)
+    :Booking Quote\n(/booking/create - GET);
+    if (Apply voucher?) then (Yes)
+      :Recalculate Quote with Voucher;
+    else (No)
+    endif
+    :Select Payment Method;
+    :Submit Booking\n(/booking/create - POST);
+    :Booking Success\n(/booking/success);
+    if (Online payment pending?) then (Yes)
+      :Payment Screen\n(/customer/payment);
+      :Payment Completed;
+    else (Pay at homestay)
+      :Booking remains pending\nfor host confirmation;
+    endif
+  else (No)
+  endif
+}
+
+partition "Customer Bookings" {
+  :Booking History\n(/customer/bookings);
+  :Booking Detail\n(/customer/booking-detail);
+  if (Cancel booking?) then (Yes)
+    :Cancel Booking\n(/customer/cancel-booking);
+    :Booking Detail;
+  else (No)
+  endif
+  if (Request extension or early checkout?) then (Yes)
+    :Stay Change Form\n(/customer/stay-change-form);
+    :Stay Change Request List\n(/customer/stay-change-requests);
+  else (No)
+  endif
+  if (Eligible to review?) then (Yes)
+    :Create Review\n(/customer/review/create);
+    :Review submitted;
+  else (No)
+  endif
+}
+
+partition "Profile and Favorites" {
+  :Manage Profile\n(/profile);
+  :Change Password\n(/change-password);
+  :Favorite Homestays\n(/customer/favorites);
+  :Add or remove favorite;
+}
+
+:Logout\n(/logout);
+stop
+@enduml

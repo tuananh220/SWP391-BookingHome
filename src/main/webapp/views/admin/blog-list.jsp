@@ -4,11 +4,99 @@
     Author     : Admin
 --%>
 
-<%@ page contentType="text/html;charset=UTF-8" language="java" %><%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Quản lý Blog</title><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalog.css?v=3"></head><body class="admin-body">
-        <aside class="admin-sidebar"><a class="admin-logo" href="${pageContext.request.contextPath}/admin/dashboard">HOMESTAY<br><span>ADMIN</span></a><nav><a href="${pageContext.request.contextPath}/admin/dashboard">Tổng quan</a><a href="${pageContext.request.contextPath}/admin/users">Tài khoản</a><a href="${pageContext.request.contextPath}/admin/homestays">Homestay</a><a href="${pageContext.request.contextPath}/admin/reviews">Đánh giá</a><a href="${pageContext.request.contextPath}/admin/policies">Chính sách hủy</a><a class="active" href="${pageContext.request.contextPath}/admin/blogs">Blog</a><a href="${pageContext.request.contextPath}/admin/banners">Banner</a></nav><form method="post" action="${pageContext.request.contextPath}/logout"><button>Đăng xuất</button></form></aside>
-        <main class="admin-main"><header class="admin-page-head"><div><p class="eyebrow">CONTENT MANAGEMENT</p><h1>Quản lý Blog</h1></div><a class="admin-create" href="${pageContext.request.contextPath}/admin/blog-form">+ Viết bài mới</a></header>
-            <c:if test="${not empty sessionScope.flashSuccess}"><div class="notice success"><c:out value="${sessionScope.flashSuccess}"/></div><c:remove var="flashSuccess" scope="session"/></c:if><c:if test="${not empty sessionScope.flashError}"><div class="notice error"><c:out value="${sessionScope.flashError}"/></div><c:remove var="flashError" scope="session"/></c:if>
-            <form class="admin-filter homestay-admin-filter" method="get" action="${pageContext.request.contextPath}/admin/blogs"><input type="search" name="keyword" placeholder="Tiêu đề, slug hoặc tác giả" value="<c:out value='${param.keyword}'/>"><select name="status"><option value="">Tất cả</option><option value="published" ${param.status == 'published' ? 'selected' : ''}>Đã xuất bản</option><option value="draft" ${param.status == 'draft' ? 'selected' : ''}>Bản nháp</option></select><button>Tìm kiếm</button><a href="${pageContext.request.contextPath}/admin/blogs">Xóa lọc</a></form>
-            <section class="admin-blog-grid"><c:forEach items="${blogs}" var="blog"><article class="admin-blog-card"><div class="admin-blog-thumb"><c:choose><c:when test="${not empty blog.thumbnailUrl}"><img src="<c:out value='${blog.thumbnailUrl}'/>" alt="Blog"></c:when><c:otherwise><span>BLOG</span></c:otherwise></c:choose><span class="booking-status ${blog.published ? 'status-Active' : 'status-Pending'}">${blog.published ? 'Published' : 'Draft'}</span></div><div class="admin-blog-content"><small><c:out value="${blog.authorName}"/> · ${blog.createdAt}</small><h2><c:out value="${blog.title}"/></h2><code>/<c:out value="${blog.slug}"/></code><div class="admin-blog-actions"><a href="${pageContext.request.contextPath}/admin/blog-form?id=${blog.blogId}">Chỉnh sửa</a><form method="post" action="${pageContext.request.contextPath}/admin/blog-action"><input type="hidden" name="blogId" value="${blog.blogId}"><button name="action" value="${blog.published ? 'unpublish' : 'publish'}">${blog.published ? 'Ẩn bài' : 'Xuất bản'}</button><button class="danger" name="action" value="delete">Xóa</button></form></div></div></article></c:forEach></section></main></body></html>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<!DOCTYPE html>
+<html lang="vi">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Quản lý Blog</title>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalog.css?v=3">
+    </head>
+    <body class="admin-body">
+        <aside class="admin-sidebar">
+            <a class="admin-logo" href="${pageContext.request.contextPath}/admin/dashboard">HOMESTAY<br>
+                <span>ADMIN</span>
+            </a>
+            <nav>
+                <a href="${pageContext.request.contextPath}/admin/dashboard">Tổng quan</a>
+                <a href="${pageContext.request.contextPath}/admin/users">Tài khoản</a>
+                <a href="${pageContext.request.contextPath}/admin/homestays">Homestay</a>
+                <a href="${pageContext.request.contextPath}/admin/reviews">Đánh giá</a>
+                <a href="${pageContext.request.contextPath}/admin/policies">Chính sách hủy</a>
+                <a class="active" href="${pageContext.request.contextPath}/admin/blogs">Blog</a>
+                <a href="${pageContext.request.contextPath}/admin/banners">Banner</a>
+            </nav>
+            <form method="post" action="${pageContext.request.contextPath}/logout">
+                <button>Đăng xuất</button>
+            </form>
+        </aside>
+        <main class="admin-main">
+            <header class="admin-page-head">
+                <div>
+                    <p class="eyebrow">CONTENT MANAGEMENT</p>
+                    <h1>Quản lý Blog</h1>
+                </div>
+                <a class="admin-create" href="${pageContext.request.contextPath}/admin/blog-form">+ Viết bài mới</a>
+            </header>
+            <c:if test="${not empty sessionScope.flashSuccess}">
+                <div class="notice success">
+                    <c:out value="${sessionScope.flashSuccess}"/>
+                </div>
+                <c:remove var="flashSuccess" scope="session"/>
+            </c:if>
+            <c:if test="${not empty sessionScope.flashError}">
+                <div class="notice error">
+                    <c:out value="${sessionScope.flashError}"/>
+                </div>
+                <c:remove var="flashError" scope="session"/>
+            </c:if>
+            <form class="admin-filter homestay-admin-filter" method="get" action="${pageContext.request.contextPath}/admin/blogs">
+                <input type="search" name="keyword" placeholder="Tiêu đề, slug hoặc tác giả" value="<c:out value='${param.keyword}'/>">
+                <select name="status">
+                    <option value="">Tất cả</option>
+                    <option value="published" ${param.status == 'published' ? 'selected' : ''}>Đã xuất bản</option>
+                    <option value="draft" ${param.status == 'draft' ? 'selected' : ''}>Bản nháp</option>
+                </select>
+                <button>Tìm kiếm</button>
+                <a href="${pageContext.request.contextPath}/admin/blogs">Xóa lọc</a>
+            </form>
+            <section class="admin-blog-grid">
+                <c:forEach items="${blogs}" var="blog">
+                    <article class="admin-blog-card">
+                        <div class="admin-blog-thumb">
+                            <c:choose>
+                                <c:when test="${not empty blog.thumbnailUrl}">
+                                    <img src="<c:out value='${blog.thumbnailUrl}'/>" alt="Blog">
+                                </c:when>
+                                <c:otherwise>
+                                    <span>BLOG</span>
+                                </c:otherwise>
+                            </c:choose>
+                            <span class="booking-status ${blog.published ? 'status-Active' : 'status-Pending'}">${blog.published ? 'Published' : 'Draft'}</span>
+                        </div>
+                        <div class="admin-blog-content">
+                            <small>
+                                <c:out value="${blog.authorName}"/> · ${blog.createdAt}</small>
+                            <h2>
+                                <c:out value="${blog.title}"/>
+                            </h2>
+                            <code>/<c:out value="${blog.slug}"/>
+                            </code>
+                            <div class="admin-blog-actions">
+                                <a href="${pageContext.request.contextPath}/admin/blog-form?id=${blog.blogId}">Chỉnh sửa</a>
+                                <form method="post" action="${pageContext.request.contextPath}/admin/blog-action">
+                                    <input type="hidden" name="blogId" value="${blog.blogId}">
+                                    <button name="action" value="${blog.published ? 'unpublish' : 'publish'}">${blog.published ? 'Ẩn bài' : 'Xuất bản'}</button>
+                                    <button class="danger" name="action" value="delete">Xóa</button>
+                                </form>
+                            </div>
+                        </div>
+                    </article>
+                </c:forEach>
+            </section>
+        </main>
+    </body>
+</html>
 

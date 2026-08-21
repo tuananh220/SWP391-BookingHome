@@ -25,6 +25,30 @@ import java.util.List;
 public class HostVoucherRepository extends DBContext
         implements IHostVoucherRepository {
 
+    private static final String VOUCHER_SELECT =
+        "SELECT v.VoucherID, v.CreatedByID, v.HomestayID, "
+        + "v.VoucherCode, v.DiscountRate, v.MaxDiscountAmount, "
+        + "v.MinOrderValue, v.StartDate, v.EndDate, v.UsageLimit, "
+        + "v.UsedCount, v.IsActive, v.CreatedAt, v.UpdatedAt, "
+        + "h.Title AS HomestayTitle "
+        + "FROM Vouchers v LEFT JOIN Homestays h "
+        + "ON h.HomestayID = v.HomestayID";
+
+    private static final String VOUCHER_INSERT =
+        "INSERT INTO Vouchers "
+        + "(CreatedByID, HomestayID, VoucherCode, DiscountRate, "
+        + "MaxDiscountAmount, MinOrderValue, StartDate, EndDate, "
+        + "UsageLimit, UsedCount, IsActive) "
+        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1)";
+
+    private static final String VOUCHER_UPDATE =
+        "UPDATE Vouchers SET HomestayID = ?, VoucherCode = ?, "
+        + "DiscountRate = ?, MaxDiscountAmount = ?, "
+        + "MinOrderValue = ?, StartDate = ?, EndDate = ?, "
+        + "UsageLimit = ?, UpdatedAt = SYSDATETIME() "
+        + "WHERE VoucherID = ? AND CreatedByID = ? "
+        + "AND UsageLimit >= UsedCount";
+
     public HostVoucherRepository() {
         super();
     }
@@ -32,7 +56,7 @@ public class HostVoucherRepository extends DBContext
     @Override
     public List<Voucher> findByHostId(int hostId) throws SQLException {
         List<Voucher> vouchers = new ArrayList<Voucher>();
-        String sql = voucherSelect()
+        String sql = VOUCHER_SELECT
                 + " WHERE v.CreatedByID = ? ORDER BY v.StartDate DESC";
         ensureConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -49,7 +73,7 @@ public class HostVoucherRepository extends DBContext
     @Override
     public Voucher findByIdAndHostId(int voucherId, int hostId)
             throws SQLException {
-        String sql = voucherSelect()
+        String sql = VOUCHER_SELECT
                 + " WHERE v.VoucherID = ? AND v.CreatedByID = ?";
         ensureConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -88,7 +112,8 @@ public class HostVoucherRepository extends DBContext
     @Override
     public boolean existsCode(String voucherCode, Integer excludedVoucherId)
             throws SQLException {
-        String sql = "SELECT 1 FROM Vouchers WHERE UPPER(VoucherCode) = UPPER(?) "
+        String sql = "SELECT 1 FROM Vouchers "
+            + "WHERE UPPER(VoucherCode) = UPPER(?) "
                 + (excludedVoucherId == null ? "" : "AND VoucherID <> ?");
         ensureConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -108,14 +133,9 @@ public class HostVoucherRepository extends DBContext
             return 0;
         }
 
-        String sql = "INSERT INTO Vouchers "
-                + "(CreatedByID, HomestayID, VoucherCode, DiscountRate, "
-                + "MaxDiscountAmount, MinOrderValue, StartDate, EndDate, "
-                + "UsageLimit, UsedCount, IsActive) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1)";
         ensureConnection();
         try (PreparedStatement statement = connection.prepareStatement(
-                sql, Statement.RETURN_GENERATED_KEYS)) {
+            VOUCHER_INSERT, Statement.RETURN_GENERATED_KEYS)) {
             setParameters(statement, voucher, false);
             statement.executeUpdate();
             try (ResultSet keys = statement.getGeneratedKeys()) {
@@ -130,14 +150,9 @@ public class HostVoucherRepository extends DBContext
             return false;
         }
 
-        String sql = "UPDATE Vouchers SET HomestayID = ?, VoucherCode = ?, "
-                + "DiscountRate = ?, MaxDiscountAmount = ?, "
-                + "MinOrderValue = ?, StartDate = ?, EndDate = ?, "
-                + "UsageLimit = ?, UpdatedAt = SYSDATETIME() "
-                + "WHERE VoucherID = ? AND CreatedByID = ? "
-                + "AND UsageLimit >= UsedCount";
         ensureConnection();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(
+            VOUCHER_UPDATE)) {
             setParameters(statement, voucher, true);
             return statement.executeUpdate() > 0;
         }
@@ -213,15 +228,6 @@ public class HostVoucherRepository extends DBContext
             statement.setInt(index++, voucher.getVoucherId());
             statement.setInt(index, voucher.getCreatedById());
         }
-    }
-
-    private String voucherSelect() {
-        return "SELECT v.VoucherID, v.CreatedByID, v.HomestayID, "
-                + "v.VoucherCode, v.DiscountRate, v.MaxDiscountAmount, "
-                + "v.MinOrderValue, v.StartDate, v.EndDate, v.UsageLimit, "
-                + "v.UsedCount, v.IsActive, h.Title AS HomestayTitle "
-                + "FROM Vouchers v LEFT JOIN Homestays h "
-                + "ON h.HomestayID = v.HomestayID";
     }
 
     private Voucher mapVoucher(ResultSet resultSet) throws SQLException {

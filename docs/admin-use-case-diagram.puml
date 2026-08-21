@@ -1,0 +1,66 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam actorStyle awesome
+
+title Admin Use Case Diagram
+
+actor Admin
+
+rectangle "HomeStay Booking System - Admin" {
+  usecase "Manage Platform Homestays" as Homestays
+  usecase "Update Homestay Information" as UpdateHomestay
+  usecase "Delete / Change Homestay Status" as DeleteHomestay
+  usecase "Manage Users and Accounts" as Accounts
+  usecase "Create Account" as CreateAccount
+  usecase "Update Account" as UpdateAccount
+  usecase "Delete / Block Account" as DeleteAccount
+  usecase "Manage Reviews and Reports" as Reviews
+  usecase "Update Review Visibility" as UpdateReview
+  usecase "Delete Review" as DeleteReview
+  usecase "Manage Cancellation Policies" as Policies
+  usecase "Create Cancellation Policy" as CreatePolicy
+  usecase "Update Cancellation Policy" as UpdatePolicy
+  usecase "Delete Cancellation Policy" as DeletePolicy
+  usecase "Manage System Content" as Content
+  usecase "Manage Blogs" as Blogs
+  usecase "Create Blog" as CreateBlog
+  usecase "Update Blog" as UpdateBlog
+  usecase "Delete Blog" as DeleteBlog
+  usecase "Manage Banners" as Banners
+  usecase "Create Banner" as CreateBanner
+  usecase "Update Banner" as UpdateBanner
+  usecase "Delete Banner" as DeleteBanner
+  usecase "View Admin Dashboard" as Dashboard
+}
+
+Admin --> Homestays
+Admin --> Accounts
+Admin --> Reviews
+Admin --> Policies
+Admin --> Content
+Admin --> Blogs
+Admin --> Banners
+Admin --> Dashboard
+
+UpdateHomestay ..> Homestays : <<extend>>
+DeleteHomestay ..> Homestays : <<extend>>
+CreateAccount ..> Accounts : <<extend>>
+UpdateAccount ..> Accounts : <<extend>>
+DeleteAccount ..> Accounts : <<extend>>
+UpdateReview ..> Reviews : <<extend>>
+DeleteReview ..> Reviews : <<extend>>
+CreatePolicy ..> Policies : <<extend>>
+UpdatePolicy ..> Policies : <<extend>>
+DeletePolicy ..> Policies : <<extend>>
+Blogs ..> Content : <<extend>>
+Banners ..> Content : <<extend>>
+CreateBlog ..> Blogs : <<extend>>
+UpdateBlog ..> Blogs : <<extend>>
+DeleteBlog ..> Blogs : <<extend>>
+CreateBanner ..> Banners : <<extend>>
+UpdateBanner ..> Banners : <<extend>>
+DeleteBanner ..> Banners : <<extend>>
+
+@enduml

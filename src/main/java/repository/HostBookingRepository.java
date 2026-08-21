@@ -10,6 +10,8 @@ package repository;
  */
 import dal.DBContext;
 import entity.Booking;
+import entity.BookingNight;
+import entity.HostCancellationSummary;
 import interfaces.IHostBookingRepository;
 
 import java.sql.PreparedStatement;
@@ -72,6 +74,130 @@ public class HostBookingRepository extends DBContext
             }
         }
         return null;
+    }
+
+    @Override
+    public List<BookingNight> findNightsByBookingIdAndHostId(
+            int bookingId, int hostId) throws SQLException {
+        List<BookingNight> nights = new ArrayList<BookingNight>();
+        String sql = "SELECT bn.BookingNightID, bn.BookingID, bn.HomestayID, "
+                + "bn.StayDate, bn.NightPrice, bn.IsActive "
+                + "FROM BookingNights bn "
+                + "INNER JOIN Bookings b ON b.BookingID = bn.BookingID "
+                + "INNER JOIN Homestays h ON h.HomestayID = b.HomestayID "
+                + "WHERE bn.BookingID = ? AND h.HostID = ? "
+                + "ORDER BY bn.StayDate";
+
+        ensureConnection();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, bookingId);
+            statement.setInt(2, hostId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    BookingNight night = new BookingNight();
+                    night.setBookingNightId(resultSet.getInt("BookingNightID"));
+                    night.setBookingId(resultSet.getInt("BookingID"));
+                    night.setHomestayId(resultSet.getInt("HomestayID"));
+                    night.setStayDate(resultSet.getDate("StayDate").toLocalDate());
+                    night.setNightPrice(resultSet.getBigDecimal("NightPrice"));
+                    night.setActive(resultSet.getBoolean("IsActive"));
+                    nights.add(night);
+                }
+            }
+        }
+        return nights;
+    }
+
+    @Override
+    public List<Booking> findHistory(int hostId, String status,
+            Integer homestayId, java.time.LocalDate fromDate,
+            java.time.LocalDate toDate) throws SQLException {
+        List<Booking> bookings = new ArrayList<Booking>();
+        StringBuilder sql = new StringBuilder(hostBookingSelect());
+        sql.append(" WHERE h.HostID = ? ");
+        List<Object> parameters = new ArrayList<Object>();
+        parameters.add(hostId);
+        if (status != null) {
+            sql.append("AND b.BookingStatus = ? ");
+            parameters.add(status);
+        }
+        if (homestayId != null) {
+            sql.append("AND b.HomestayID = ? ");
+            parameters.add(homestayId);
+        }
+        if (fromDate != null) {
+            sql.append("AND b.CheckInDate >= ? ");
+            parameters.add(java.sql.Date.valueOf(fromDate));
+        }
+        if (toDate != null) {
+            sql.append("AND b.CheckOutDate <= ? ");
+            parameters.add(java.sql.Date.valueOf(toDate));
+        }
+        sql.append("ORDER BY b.CheckInDate DESC, b.CreatedAt DESC");
+
+        ensureConnection();
+        try (PreparedStatement statement = connection.prepareStatement(
+                sql.toString())) {
+            for (int index = 0; index < parameters.size(); index++) {
+                statement.setObject(index + 1, parameters.get(index));
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    bookings.add(mapBooking(resultSet));
+                }
+            }
+        }
+        return bookings;
+    }
+
+    @Override
+    public HostCancellationSummary findCancellationSummary(int hostId,
+            Integer homestayId, java.time.LocalDate fromDate,
+            java.time.LocalDate toDate) throws SQLException {
+        HostCancellationSummary summary = new HostCancellationSummary();
+        StringBuilder sql = new StringBuilder(
+                "SELECT "
+                + "SUM(CASE WHEN b.BookingStatus = 'Cancelled' "
+                + "AND b.CancelledBy = 'Home Owner' THEN 1 ELSE 0 END) "
+                + "AS HostCancelledBookings, "
+                + "SUM(CASE WHEN b.BookingStatus IN "
+                + "('Confirmed', 'Completed', 'Cancelled') THEN 1 ELSE 0 END) "
+                + "AS AcceptedBookings "
+                + "FROM Bookings b INNER JOIN Homestays h "
+                + "ON h.HomestayID = b.HomestayID "
+                + "WHERE h.HostID = ? ");
+        List<Object> parameters = new ArrayList<Object>();
+        parameters.add(hostId);
+        if (homestayId != null) {
+            sql.append("AND b.HomestayID = ? ");
+            parameters.add(homestayId);
+        }
+        if (fromDate != null) {
+            sql.append("AND b.CheckInDate >= ? ");
+            parameters.add(java.sql.Date.valueOf(fromDate));
+        }
+        if (toDate != null) {
+            sql.append("AND b.CheckOutDate <= ? ");
+            parameters.add(java.sql.Date.valueOf(toDate));
+        }
+        ensureConnection();
+        try (PreparedStatement statement = connection.prepareStatement(
+                sql.toString())) {
+            for (int index = 0; index < parameters.size(); index++) {
+                statement.setObject(index + 1, parameters.get(index));
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    summary.setHostCancelledBookings(
+                            resultSet.getInt("HostCancelledBookings")
+                    );
+                    summary.setAcceptedBookings(
+                            resultSet.getInt("AcceptedBookings")
+                    );
+                }
+            }
+        }
+        return summary;
     }
 
     @Override
@@ -400,26 +526,33 @@ public class HostBookingRepository extends DBContext
 
     private String hostBookingSelect() {
         return "SELECT b.BookingID, b.CustomerID, b.HomestayID, "
-                + "b.VoucherID, b.CancellationPolicyID, "
+                + "b.VoucherID, v.VoucherCode, b.CancellationPolicyID, "
                 + "b.CancellationPolicyName, b.FullRefundDaysSnapshot, "
                 + "b.PartialRefundDaysSnapshot, "
                 + "b.PartialRefundPercentSnapshot, b.CheckInDate, b.CheckOutDate, "
                 + "b.TotalGuests, b.OriginalAmount, b.DiscountAmount, "
                 + "b.TotalAmount, b.BookingStatus, b.Note, b.CancelReason, "
-                + "b.RejectReason, b.RefundAmount, b.CreatedAt, "
+                + "b.RejectReason, b.CancelledBy, b.CancelledAt, "
+                + "b.RefundAmount, b.CreatedAt, "
                 + "h.Title AS HomestayTitle, customer.FullName AS CustomerName, "
                 + "customer.PhoneNumber AS CustomerPhone, "
-                + "pay.PaymentStatus, pay.MethodName AS PaymentMethodName, "
-                + "pay.IsOnline AS PaymentOnline "
-                + "FROM Bookings b "
-                + "INNER JOIN Homestays h ON h.HomestayID = b.HomestayID "
-                + "INNER JOIN Users customer ON customer.UserID = b.CustomerID "
-                + "OUTER APPLY (SELECT TOP 1 p.PaymentStatus, pm.MethodName, "
-                + "pm.IsOnline FROM Payments p "
+                + "(SELECT TOP 1 p.PaymentStatus FROM Payments p "
+                + "WHERE p.BookingID = b.BookingID "
+                + "ORDER BY p.PaymentID DESC) AS PaymentStatus, "
+                + "(SELECT TOP 1 pm.MethodName FROM Payments p "
                 + "INNER JOIN PaymentMethods pm "
                 + "ON pm.PaymentMethodID = p.PaymentMethodID "
                 + "WHERE p.BookingID = b.BookingID "
-                + "ORDER BY p.PaymentID DESC) pay";
+                + "ORDER BY p.PaymentID DESC) AS PaymentMethodName, "
+                + "(SELECT TOP 1 pm.IsOnline FROM Payments p "
+                + "INNER JOIN PaymentMethods pm "
+                + "ON pm.PaymentMethodID = p.PaymentMethodID "
+                + "WHERE p.BookingID = b.BookingID "
+                + "ORDER BY p.PaymentID DESC) AS PaymentOnline "
+                + "FROM Bookings b "
+                + "INNER JOIN Homestays h ON h.HomestayID = b.HomestayID "
+                + "LEFT JOIN Vouchers v ON v.VoucherID = b.VoucherID "
+                + "INNER JOIN Users customer ON customer.UserID = b.CustomerID";
     }
 
     private Booking mapBooking(ResultSet resultSet) throws SQLException {
@@ -427,6 +560,11 @@ public class HostBookingRepository extends DBContext
         booking.setBookingId(resultSet.getInt("BookingID"));
         booking.setCustomerId(resultSet.getInt("CustomerID"));
         booking.setHomestayId(resultSet.getInt("HomestayID"));
+        int voucherId = resultSet.getInt("VoucherID");
+        if (!resultSet.wasNull()) {
+            booking.setVoucherId(voucherId);
+        }
+        booking.setVoucherCode(resultSet.getString("VoucherCode"));
         booking.setCancellationPolicyName(
                 resultSet.getString("CancellationPolicyName")
         );
@@ -455,6 +593,7 @@ public class HostBookingRepository extends DBContext
         booking.setNote(resultSet.getString("Note"));
         booking.setCancelReason(resultSet.getString("CancelReason"));
         booking.setRejectReason(resultSet.getString("RejectReason"));
+        booking.setCancelledBy(resultSet.getString("CancelledBy"));
         booking.setRefundAmount(resultSet.getBigDecimal("RefundAmount"));
         booking.setHomestayTitle(resultSet.getString("HomestayTitle"));
         booking.setCustomerName(resultSet.getString("CustomerName"));
@@ -468,6 +607,10 @@ public class HostBookingRepository extends DBContext
         Timestamp createdAt = resultSet.getTimestamp("CreatedAt");
         if (createdAt != null) {
             booking.setCreatedAt(createdAt.toLocalDateTime());
+        }
+        Timestamp cancelledAt = resultSet.getTimestamp("CancelledAt");
+        if (cancelledAt != null) {
+            booking.setCancelledAt(cancelledAt.toLocalDateTime());
         }
         return booking;
     }

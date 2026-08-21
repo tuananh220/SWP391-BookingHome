@@ -1,0 +1,58 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam actorStyle awesome
+
+title Customer Use Case Diagram
+
+actor Customer
+
+rectangle "HomeStay Booking System - Customer" {
+  usecase "Register Account" as Register
+  usecase "Login / Logout" as Login
+  usecase "Manage Profile" as Profile
+  usecase "Update Profile" as UpdateProfile
+  usecase "Search Homestays" as Search
+  usecase "View Homestay Detail" as Detail
+  usecase "Book Homestay" as Book
+  usecase "Confirm Booking" as ConfirmBooking
+  usecase "Select Payment Method" as PaymentMethod
+  usecase "Apply Voucher" as ApplyVoucher
+  usecase "View Order History" as OrderHistory
+  usecase "Cancel Booking" as CancelBooking
+  usecase "Post Review" as PostReview
+  usecase "Manage Favorite Homestays" as Favorites
+  usecase "Add Favorite" as AddFavorite
+  usecase "View Favorites" as ViewFavorites
+  usecase "Remove Favorite" as RemoveFavorite
+  usecase "Manage Stay Change Requests" as StayChanges
+  usecase "Create Stay Change Request" as CreateStayChange
+  usecase "View Stay Change Requests" as ViewStayChanges
+  usecase "Cancel Stay Change Request" as CancelStayChange
+}
+
+Customer --> Register
+Customer --> Login
+Customer --> Profile
+Customer --> Search
+Customer --> Detail
+Customer --> Book
+Customer --> OrderHistory
+Customer --> PostReview
+Customer --> Favorites
+Customer --> StayChanges
+
+Book ..> ConfirmBooking : <<include>>
+Book ..> PaymentMethod : <<include>>
+ApplyVoucher ..> Book : <<extend>>
+CancelBooking ..> OrderHistory : <<extend>>
+UpdateProfile ..> Profile : <<extend>>
+AddFavorite ..> Favorites : <<extend>>
+ViewFavorites ..> Favorites : <<extend>>
+RemoveFavorite ..> Favorites : <<extend>>
+CreateStayChange ..> StayChanges : <<extend>>
+ViewStayChanges ..> StayChanges : <<extend>>
+CancelStayChange ..> StayChanges : <<extend>>
+
+@enduml

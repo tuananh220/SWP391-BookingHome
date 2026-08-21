@@ -1,0 +1,45 @@
+@startuml
+top to bottom direction
+skinparam shadowing false
+skinparam dpi 150
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+skinparam linetype polyline
+skinparam ArrowColor #4A5568
+skinparam package {
+  BackgroundColor #F7FAFC
+  BorderColor #2D3748
+}
+
+title Group 3 - HomeStay Booking Main Packages
+
+package "views" as Views
+package "controller" as Controller
+package "service" as Service
+package "interfaces" as Interfaces
+package "repository" as Repository
+package "entity" as Entity
+package "ultis" as Utils
+
+Views ..> Controller : uses
+Controller ..> Service : calls
+Controller ..> Entity : uses
+Controller ..> Utils : parses
+Service ..> Interfaces : follows contract
+Service ..> Repository : uses
+Service ..> Entity : models
+Repository ..> Interfaces : implements
+Repository ..> Entity : maps
+
+note right of Views
+  JSP screens for
+  auth, customer,
+  host and admin
+end note
+
+note right of Entity
+  Domain models and
+  request/response data
+end note
+
+@enduml

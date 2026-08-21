@@ -14,7 +14,11 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.LocalDate;
+import java.util.List;
+import entity.Homestay;
+import entity.HomestaySchedule;
 import service.HostScheduleService;
+import service.HostHomestayService;
 import ultis.ParseUtil;
 
 /**
@@ -65,12 +69,30 @@ public class HostScheduleController extends HttpServlet {
         Integer homestayId = ParseUtil.toPositiveInteger(
                 request.getParameter("homestayId")
         );
+        User currentUser = getCurrentUser(request);
+        List<Homestay> homestays = new HostHomestayService()
+            .getHomestays(currentUser.getUserId());
+        if (homestayId == null && !homestays.isEmpty()) {
+            homestayId = homestays.get(0).getHomestayId();
+        }
         if (homestayId == null) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            response.sendError(HttpServletResponse.SC_NOT_FOUND,
+                "Bạn chưa có homestay.");
             return;
         }
 
-        User currentUser = getCurrentUser(request);
+        LocalDate fromDate = ParseUtil.toLocalDate(
+            request.getParameter("fromDate")
+        );
+        LocalDate toDate = ParseUtil.toLocalDate(
+            request.getParameter("toDate")
+        );
+        if (fromDate == null) {
+            fromDate = LocalDate.now();
+        }
+        if (toDate == null) {
+            toDate = fromDate.plusDays(59);
+        }
         HostScheduleService service = new HostScheduleService();
         HomestayForm homestay = service.getOwnedHomestay(
                 homestayId, currentUser.getUserId()
@@ -81,10 +103,26 @@ public class HostScheduleController extends HttpServlet {
         }
 
         request.setAttribute("homestay", homestay);
-        request.setAttribute(
-                "schedules",
-                service.getNextSixtyDays(homestay, currentUser.getUserId())
-        );
+        try {
+            List<HomestaySchedule> schedules = service.getScheduleRange(
+                homestay, currentUser.getUserId(), fromDate, toDate
+            );
+            request.setAttribute("schedules", schedules);
+            request.setAttribute("availableCount", schedules.stream()
+                .filter(day -> day.isAvailable() && !day.isBooked())
+                .count());
+            request.setAttribute("bookedCount", schedules.stream()
+                .filter(HomestaySchedule::isBooked).count());
+            request.setAttribute("lockedCount", schedules.stream()
+                .filter(day -> !day.isAvailable() && !day.isBooked())
+                .count());
+        } catch (IllegalArgumentException exception) {
+            request.setAttribute("schedules", java.util.Collections.emptyList());
+            request.setAttribute("error", exception.getMessage());
+        }
+        request.setAttribute("homestays", homestays);
+        request.setAttribute("fromDate", fromDate);
+        request.setAttribute("toDate", toDate);
         request.setAttribute("today", LocalDate.now());
         request.getRequestDispatcher("/views/host/schedule.jsp")
                 .forward(request, response);
@@ -105,17 +143,44 @@ public class HostScheduleController extends HttpServlet {
         Integer homestayId = ParseUtil.toPositiveInteger(
                 request.getParameter("homestayId")
         );
+        String action = request.getParameter("action");
+        User currentUser = getCurrentUser(request);
+        HostScheduleService service = new HostScheduleService();
+        if ("bulk-lock".equals(action) || "bulk-open".equals(action)) {
+            LocalDate fromDate = ParseUtil.toLocalDate(request.getParameter("fromDate"));
+            LocalDate toDate = ParseUtil.toLocalDate(request.getParameter("toDate"));
+            if (homestayId == null || fromDate == null || toDate == null) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+            }
+            try {
+            boolean success = service.updateRange(
+                homestayId, currentUser.getUserId(), fromDate, toDate,
+                "bulk-open".equals(action),
+                request.getParameter("lockReason")
+            );
+            request.getSession().setAttribute(
+                success ? "flashSuccess" : "flashError",
+                success ? "Đã cập nhật hàng loạt lịch."
+                    : "Không thể cập nhật hàng loạt lịch."
+            );
+            } catch (IllegalArgumentException exception) {
+            request.getSession().setAttribute(
+                "flashError", exception.getMessage()
+            );
+            }
+            response.sendRedirect(request.getContextPath()
+                + "/host/schedule?homestayId=" + homestayId
+                + "&fromDate=" + fromDate + "&toDate=" + toDate);
+            return;
+        }
         LocalDate scheduleDate = ParseUtil.toLocalDate(
-                request.getParameter("scheduleDate")
+            request.getParameter("scheduleDate")
         );
         if (homestayId == null || scheduleDate == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
-
-        User currentUser = getCurrentUser(request);
-        HostScheduleService service = new HostScheduleService();
-        String action = request.getParameter("action");
 
         try {
             boolean success;

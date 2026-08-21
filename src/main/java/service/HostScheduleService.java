@@ -39,6 +39,26 @@ public class HostScheduleService {
     ) {
         LocalDate fromDate = LocalDate.now();
         LocalDate toDate = fromDate.plusDays(59);
+        return getScheduleRange(homestay, hostId, fromDate, toDate);
+    }
+
+    public List<HomestaySchedule> getScheduleRange(
+            HomestayForm homestay, int hostId,
+            LocalDate fromDate, LocalDate toDate
+    ) {
+        if (fromDate == null || toDate == null || fromDate.isAfter(toDate)) {
+            throw new IllegalArgumentException("Khoảng ngày không hợp lệ.");
+        }
+        if (fromDate.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException(
+                    "Không thể xem lịch bắt đầu trước hôm nay."
+            );
+        }
+        if (fromDate.plusDays(365).isBefore(toDate)) {
+            throw new IllegalArgumentException(
+                    "Khoảng xem lịch không được vượt quá 365 ngày."
+            );
+        }
         try {
             List<HomestaySchedule> stored = scheduleRepository.findEntries(
                     homestay.getHomestayId(), hostId, fromDate, toDate
@@ -78,6 +98,57 @@ public class HostScheduleService {
         } catch (SQLException exception) {
             exception.printStackTrace();
             return new ArrayList<HomestaySchedule>();
+        }
+    }
+
+    public boolean updateRange(int homestayId, int hostId,
+            LocalDate fromDate, LocalDate toDate, boolean available,
+            String lockReason) {
+        HomestayForm homestay = getOwnedHomestay(homestayId, hostId);
+        if (homestay == null) {
+            throw new IllegalArgumentException("Không tìm thấy homestay.");
+        }
+        if (fromDate == null || toDate == null || fromDate.isAfter(toDate)
+                || fromDate.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Khoảng ngày không hợp lệ.");
+        }
+        if (fromDate.plusDays(365).isBefore(toDate)) {
+            throw new IllegalArgumentException(
+                    "Khoảng cập nhật không được vượt quá 365 ngày."
+            );
+        }
+        if (!available && ValidationUtil.isBlank(lockReason)) {
+            lockReason = "Host locked";
+        }
+        if (lockReason != null && lockReason.trim().length() > 100) {
+            throw new IllegalArgumentException(
+                    "Lý do khóa không được vượt quá 100 ký tự."
+            );
+        }
+
+        try {
+            List<HomestaySchedule> entries = scheduleRepository.findEntries(
+                    homestayId, hostId, fromDate, toDate
+            );
+            for (HomestaySchedule entry : entries) {
+                if (entry.isBooked()) {
+                    throw new IllegalArgumentException(
+                            "Khoảng ngày chứa ngày đã có booking."
+                    );
+                }
+            }
+            LocalDate date = fromDate;
+            while (!date.isAfter(toDate)) {
+                if (!save(homestayId, hostId, date, null, available,
+                        available ? null : lockReason)) {
+                    return false;
+                }
+                date = date.plusDays(1);
+            }
+            return true;
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            return false;
         }
     }
 

@@ -1,0 +1,163 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam actorStyle awesome
+
+actor Customer
+actor "Home Owner" as HomeOwner
+actor Admin
+
+rectangle "Group 3 - HomeStay Booking System" {
+
+  package "Customer Functions" {
+    usecase "Register Account" as UC_Register
+    usecase "Login / Logout" as UC_Login
+    usecase "Manage Profile" as UC_Profile
+    usecase "Update Profile" as UC_UpdateProfile
+    usecase "Search Homestays" as UC_Search
+    usecase "View Homestay Detail" as UC_Detail
+    usecase "Book Homestay" as UC_Book
+    usecase "Confirm Booking" as UC_ConfirmBooking
+    usecase "Select Payment Method" as UC_PaymentMethod
+    usecase "Apply Voucher" as UC_ApplyVoucher
+    usecase "View Order History" as UC_OrderHistory
+    usecase "Cancel Booking" as UC_CancelBooking
+    usecase "Post Review" as UC_PostReview
+    usecase "Manage Favorite Homestays" as UC_Favorites
+    usecase "Add Favorite" as UC_AddFavorite
+    usecase "View Favorites" as UC_ViewFavorites
+    usecase "Remove Favorite" as UC_RemoveFavorite
+    usecase "Manage Stay Change Requests" as UC_StayChanges
+    usecase "Create Stay Change Request" as UC_CreateStayChange
+    usecase "View Stay Change Requests" as UC_ViewStayChanges
+    usecase "Cancel Stay Change Request" as UC_CancelStayChange
+  }
+
+  package "Home Owner Functions" {
+    usecase "Manage Homestays" as UC_ManageHomestays
+    usecase "Create Homestay" as UC_CreateHomestay
+    usecase "Update Homestay" as UC_UpdateHomestay
+    usecase "Delete / Hide Homestay" as UC_DeleteHomestay
+    usecase "Manage Amenities" as UC_ManageAmenities
+    usecase "Create Amenity" as UC_CreateAmenity
+    usecase "Update Amenity" as UC_UpdateAmenity
+    usecase "Delete Amenity" as UC_DeleteAmenity
+    usecase "Manage Vouchers" as UC_ManageVouchers
+    usecase "Create Voucher" as UC_CreateVoucher
+    usecase "Update Voucher" as UC_UpdateVoucher
+    usecase "Delete / Deactivate Voucher" as UC_DeleteVoucher
+    usecase "View Booking Requests" as UC_ViewBookingRequests
+    usecase "Confirm / Reject Booking" as UC_ProcessBooking
+    usecase "View Booking Schedule" as UC_Schedule
+    usecase "Manage Availability and Daily Price" as UC_Availability
+    usecase "Process Stay Change Requests" as UC_ProcessStayChanges
+    usecase "View Revenue Reports" as UC_Revenue
+    usecase "View Booking History" as UC_HostHistory
+  }
+
+  package "Admin Functions" {
+    usecase "Manage Platform Homestays" as UC_AdminHomestays
+    usecase "Update Homestay Information" as UC_AdminUpdateHomestay
+    usecase "Delete / Change Homestay Status" as UC_AdminDeleteHomestay
+    usecase "Manage Users and Accounts" as UC_Accounts
+    usecase "Create Account" as UC_CreateAccount
+    usecase "Update Account" as UC_UpdateAccount
+    usecase "Delete / Block Account" as UC_DeleteAccount
+    usecase "Manage Reviews and Reports" as UC_Reviews
+    usecase "Update Review Visibility" as UC_UpdateReview
+    usecase "Delete Review" as UC_DeleteReview
+    usecase "Manage Cancellation Policies" as UC_Policies
+    usecase "Create Cancellation Policy" as UC_CreatePolicy
+    usecase "Update Cancellation Policy" as UC_UpdatePolicy
+    usecase "Delete Cancellation Policy" as UC_DeletePolicy
+    usecase "Manage System Content" as UC_Content
+    usecase "Manage Blogs" as UC_Blogs
+    usecase "Create Blog" as UC_CreateBlog
+    usecase "Update Blog" as UC_UpdateBlog
+    usecase "Delete Blog" as UC_DeleteBlog
+    usecase "Manage Banners" as UC_Banners
+    usecase "Create Banner" as UC_CreateBanner
+    usecase "Update Banner" as UC_UpdateBanner
+    usecase "Delete Banner" as UC_DeleteBanner
+    usecase "View Admin Dashboard" as UC_AdminDashboard
+  }
+}
+
+' Actor associations
+Customer --> UC_Register
+Customer --> UC_Login
+Customer --> UC_Profile
+Customer --> UC_Search
+Customer --> UC_Detail
+Customer --> UC_Book
+Customer --> UC_OrderHistory
+Customer --> UC_PostReview
+Customer --> UC_Favorites
+Customer --> UC_StayChanges
+
+HomeOwner --> UC_ManageHomestays
+HomeOwner --> UC_ManageAmenities
+HomeOwner --> UC_ManageVouchers
+HomeOwner --> UC_ViewBookingRequests
+HomeOwner --> UC_ProcessBooking
+HomeOwner --> UC_Schedule
+HomeOwner --> UC_Availability
+HomeOwner --> UC_ProcessStayChanges
+HomeOwner --> UC_Revenue
+HomeOwner --> UC_HostHistory
+
+Admin --> UC_AdminHomestays
+Admin --> UC_Accounts
+Admin --> UC_Reviews
+Admin --> UC_Policies
+Admin --> UC_Content
+Admin --> UC_Banners
+Admin --> UC_AdminDashboard
+
+' Customer relationships
+UC_Book ..> UC_ConfirmBooking : <<include>>
+UC_Book ..> UC_PaymentMethod : <<include>>
+UC_ApplyVoucher ..> UC_Book : <<extend>>
+UC_CancelBooking ..> UC_OrderHistory : <<extend>>
+UC_CreateStayChange ..> UC_StayChanges : <<extend>>
+UC_ViewStayChanges ..> UC_StayChanges : <<extend>>
+UC_CancelStayChange ..> UC_StayChanges : <<extend>>
+UC_AddFavorite ..> UC_Favorites : <<extend>>
+UC_ViewFavorites ..> UC_Favorites : <<extend>>
+UC_RemoveFavorite ..> UC_Favorites : <<extend>>
+UC_UpdateProfile ..> UC_Profile : <<extend>>
+
+' Home owner CRUD relationships
+UC_CreateHomestay ..> UC_ManageHomestays : <<extend>>
+UC_UpdateHomestay ..> UC_ManageHomestays : <<extend>>
+UC_DeleteHomestay ..> UC_ManageHomestays : <<extend>>
+UC_CreateAmenity ..> UC_ManageAmenities : <<extend>>
+UC_UpdateAmenity ..> UC_ManageAmenities : <<extend>>
+UC_DeleteAmenity ..> UC_ManageAmenities : <<extend>>
+UC_CreateVoucher ..> UC_ManageVouchers : <<extend>>
+UC_UpdateVoucher ..> UC_ManageVouchers : <<extend>>
+UC_DeleteVoucher ..> UC_ManageVouchers : <<extend>>
+UC_Availability ..> UC_Schedule : <<extend>>
+
+' Admin CRUD relationships
+UC_AdminUpdateHomestay ..> UC_AdminHomestays : <<extend>>
+UC_AdminDeleteHomestay ..> UC_AdminHomestays : <<extend>>
+UC_CreateAccount ..> UC_Accounts : <<extend>>
+UC_UpdateAccount ..> UC_Accounts : <<extend>>
+UC_DeleteAccount ..> UC_Accounts : <<extend>>
+UC_UpdateReview ..> UC_Reviews : <<extend>>
+UC_DeleteReview ..> UC_Reviews : <<extend>>
+UC_CreatePolicy ..> UC_Policies : <<extend>>
+UC_UpdatePolicy ..> UC_Policies : <<extend>>
+UC_DeletePolicy ..> UC_Policies : <<extend>>
+UC_Blogs ..> UC_Content : <<extend>>
+UC_Banners ..> UC_Content : <<extend>>
+UC_CreateBlog ..> UC_Blogs : <<extend>>
+UC_UpdateBlog ..> UC_Blogs : <<extend>>
+UC_DeleteBlog ..> UC_Blogs : <<extend>>
+UC_CreateBanner ..> UC_Banners : <<extend>>
+UC_UpdateBanner ..> UC_Banners : <<extend>>
+UC_DeleteBanner ..> UC_Banners : <<extend>>
+
+@enduml

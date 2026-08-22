@@ -87,8 +87,7 @@ public class ProfileController extends HttpServlet {
                     currentUser.getUserId(),
                     request.getParameter("fullName"),
                     request.getParameter("phoneNumber"),
-                    request.getParameter("address"),
-                    request.getParameter("avatarUrl")
+                    request.getParameter("address")
             );
 
             if (updatedUser == null) {

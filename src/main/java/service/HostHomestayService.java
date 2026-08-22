@@ -125,7 +125,11 @@ public class HostHomestayService {
         }
         if (ValidationUtil.isBlank(form.getCity())
                 || form.getCity().length() > 100) {
-            throw new IllegalArgumentException("Thành phố không hợp lệ.");
+            throw new IllegalArgumentException("Tỉnh / Thành phố không hợp lệ.");
+        }
+        if (ValidationUtil.isBlank(form.getDistrict())
+                || form.getDistrict().length() > 100) {
+            throw new IllegalArgumentException("Phường / Xã / Đơn vị hành chính không hợp lệ.");
         }
         if (form.getPricePerNight() == null
                 || form.getPricePerNight().compareTo(BigDecimal.ZERO) < 0) {

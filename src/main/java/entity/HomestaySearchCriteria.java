@@ -6,6 +6,8 @@ package entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -21,6 +23,7 @@ public class HomestaySearchCriteria {
     private LocalDate checkInDate;
     private LocalDate checkOutDate;
     private Integer amenityId;
+    private List<Integer> amenityIds = new ArrayList<Integer>();
     private Integer minRating;
 
     public HomestaySearchCriteria() {
@@ -88,6 +91,14 @@ public class HomestaySearchCriteria {
 
     public void setAmenityId(Integer amenityId) {
         this.amenityId = amenityId;
+    }
+
+    public List<Integer> getAmenityIds() {
+        return amenityIds;
+    }
+
+    public void setAmenityIds(List<Integer> amenityIds) {
+        this.amenityIds = amenityIds;
     }
 
     public Integer getMinRating() {

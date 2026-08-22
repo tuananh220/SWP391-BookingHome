@@ -55,8 +55,9 @@ public class HomestayRepository extends DBContext
 
         if (!isBlank(criteria.getKeyword())) {
             sql.append("AND (h.Title LIKE ? OR h.Description LIKE ? ");
-            sql.append("OR h.Address LIKE ? OR h.City LIKE ?) ");
+            sql.append("OR h.Address LIKE ? OR h.City LIKE ? OR h.District LIKE ?) ");
             String keyword = "%" + criteria.getKeyword().trim() + "%";
+            parameters.add(keyword);
             parameters.add(keyword);
             parameters.add(keyword);
             parameters.add(keyword);
@@ -64,8 +65,12 @@ public class HomestayRepository extends DBContext
         }
 
         if (!isBlank(criteria.getCity())) {
-            sql.append("AND h.City = ? ");
-            parameters.add(criteria.getCity().trim());
+            sql.append("AND (h.City = ? OR h.District = ? OR h.City LIKE ? OR h.District LIKE ?) ");
+            String cityParam = criteria.getCity().trim();
+            parameters.add(cityParam);
+            parameters.add(cityParam);
+            parameters.add("%" + cityParam + "%");
+            parameters.add("%" + cityParam + "%");
         }
 
         if (criteria.getMinPrice() != null) {
@@ -83,7 +88,16 @@ public class HomestayRepository extends DBContext
             parameters.add(criteria.getGuests());
         }
 
-        if (criteria.getAmenityId() != null) {
+        if (criteria.getAmenityIds() != null && !criteria.getAmenityIds().isEmpty()) {
+            for (Integer amenityId : criteria.getAmenityIds()) {
+                if (amenityId != null && amenityId > 0) {
+                    sql.append("AND EXISTS (SELECT 1 FROM HomestayAmenities ha ");
+                    sql.append("WHERE ha.HomestayID = h.HomestayID ");
+                    sql.append("AND ha.AmenityID = ?) ");
+                    parameters.add(amenityId);
+                }
+            }
+        } else if (criteria.getAmenityId() != null) {
             sql.append("AND EXISTS (SELECT 1 FROM HomestayAmenities ha ");
             sql.append("WHERE ha.HomestayID = h.HomestayID ");
             sql.append("AND ha.AmenityID = ?) ");
@@ -192,18 +206,25 @@ public class HomestayRepository extends DBContext
 
     @Override
     public List<String> findActiveCities() throws SQLException {
-        List<String> cities = new ArrayList<String>();
+        List<String> locations = new ArrayList<String>();
         String sql = "SELECT DISTINCT City FROM Homestays "
-                + "WHERE Status = 'Active' ORDER BY City";
+                + "WHERE Status = 'Active' AND City IS NOT NULL AND City <> '' "
+                + "UNION "
+                + "SELECT DISTINCT District FROM Homestays "
+                + "WHERE Status = 'Active' AND District IS NOT NULL AND District <> '' "
+                + "ORDER BY City";
 
         ensureConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
-                cities.add(resultSet.getString("City"));
+                String loc = resultSet.getString(1);
+                if (loc != null && !loc.trim().isEmpty()) {
+                    locations.add(loc.trim());
+                }
             }
         }
-        return cities;
+        return locations;
     }
 
     private List<HomestayImage> findImagesByHomestayId(int homestayId)

@@ -12,6 +12,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class ParseUtil {
 
@@ -81,9 +83,26 @@ public final class ParseUtil {
             return null;
         }
         try {
-            return LocalDate.parse(value.trim());
+            LocalDate date = LocalDate.parse(value.trim());
+            if (date.isBefore(LocalDate.now())) {
+                return null;
+            }
+            return date;
         } catch (DateTimeParseException exception) {
             return null;
         }
+    }
+
+    public static List<Integer> toPositiveIntegerList(String[] values) {
+        List<Integer> list = new ArrayList<Integer>();
+        if (values != null) {
+            for (String value : values) {
+                Integer num = toPositiveInteger(value);
+                if (num != null && !list.contains(num)) {
+                    list.add(num);
+                }
+            }
+        }
+        return list;
     }
 }

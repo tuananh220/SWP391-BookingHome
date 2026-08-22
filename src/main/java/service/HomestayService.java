@@ -13,6 +13,7 @@ import entity.Homestay;
 import entity.HomestaySearchCriteria;
 import interfaces.IHomestayRepository;
 import repository.HomestayRepository;
+import ultis.ValidationUtil;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -69,25 +70,34 @@ public class HomestayService {
     }
 
     private void validateCriteria(HomestaySearchCriteria criteria) {
+        if (criteria == null || ValidationUtil.isBlank(criteria.getKeyword())) {
+            throw new IllegalArgumentException("Vui lòng nhập từ khóa tìm kiếm.");
+        }
+
+        LocalDate checkIn = criteria.getCheckInDate();
+        LocalDate checkOut = criteria.getCheckOutDate();
+        if (checkIn == null || checkOut == null) {
+            throw new IllegalArgumentException(
+                    "Vui lòng chọn cả ngày nhận và ngày trả phòng."
+            );
+        }
+        if (checkIn.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException(
+                    "Ngày nhận phòng không được ở trong quá khứ."
+            );
+        }
+        if (!checkOut.isAfter(checkIn)) {
+            throw new IllegalArgumentException(
+                    "Ngày trả phòng phải sau ngày nhận phòng."
+            );
+        }
+
         BigDecimal minPrice = criteria.getMinPrice();
         BigDecimal maxPrice = criteria.getMaxPrice();
         if (minPrice != null && maxPrice != null
                 && minPrice.compareTo(maxPrice) > 0) {
             throw new IllegalArgumentException(
                     "Giá thấp nhất không được lớn hơn giá cao nhất."
-            );
-        }
-
-        LocalDate checkIn = criteria.getCheckInDate();
-        LocalDate checkOut = criteria.getCheckOutDate();
-        if ((checkIn == null) != (checkOut == null)) {
-            throw new IllegalArgumentException(
-                    "Vui lòng chọn cả ngày nhận và ngày trả phòng."
-            );
-        }
-        if (checkIn != null && !checkOut.isAfter(checkIn)) {
-            throw new IllegalArgumentException(
-                    "Ngày trả phòng phải sau ngày nhận phòng."
             );
         }
     }

@@ -13,6 +13,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import service.BannerService;
@@ -101,21 +102,30 @@ public class HomestayListController extends HttpServlet {
         criteria.setMaxPrice(ParseUtil.toNonNegativeBigDecimal(
                 request.getParameter("maxPrice")
         ));
-        criteria.setGuests(ParseUtil.toPositiveInteger(
-                request.getParameter("guests")
-        ));
-        criteria.setAmenityId(ParseUtil.toPositiveInteger(
-                request.getParameter("amenityId")
-        ));
+
+        // Default guests = 2 if not provided
+        Integer guests = ParseUtil.toPositiveInteger(request.getParameter("guests"));
+        criteria.setGuests(guests != null ? guests : 2);
+
+        String[] amenityIdValues = request.getParameterValues("amenityIds");
+        if (amenityIdValues == null || amenityIdValues.length == 0) {
+            amenityIdValues = request.getParameterValues("amenityId");
+        }
+        criteria.setAmenityIds(ParseUtil.toPositiveIntegerList(amenityIdValues));
         criteria.setMinRating(ParseUtil.toPositiveInteger(
                 request.getParameter("minRating")
         ));
-        criteria.setCheckInDate(ParseUtil.toLocalDate(
-                request.getParameter("checkIn")
-        ));
-        criteria.setCheckOutDate(ParseUtil.toLocalDate(
-                request.getParameter("checkOut")
-        ));
+
+        // Default checkIn = today, checkOut = tomorrow if not provided
+        LocalDate today    = LocalDate.now();
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+
+        LocalDate checkIn = ParseUtil.toLocalDate(request.getParameter("checkIn"));
+        criteria.setCheckInDate(checkIn != null ? checkIn : today);
+
+        LocalDate checkOut = ParseUtil.toLocalDate(request.getParameter("checkOut"));
+        criteria.setCheckOutDate(checkOut != null ? checkOut : tomorrow);
+
         return criteria;
     }
 

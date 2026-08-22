@@ -16,6 +16,7 @@ import ultis.ValidationUtil;
 import java.sql.SQLException;
 
 public class UserService {
+
     private final IUserRepository userRepository;
 
     public UserService() {
@@ -23,17 +24,17 @@ public class UserService {
     }
 
     public User updateProfile(int userId, String fullName,
-                              String phoneNumber, String address,
-                              String avatarUrl) {
+            String phoneNumber, String address) {
         fullName = fullName == null ? null : fullName.trim();
 
         if (ValidationUtil.isBlank(fullName) || fullName.length() > 100) {
             throw new IllegalArgumentException("Họ tên không hợp lệ.");
         }
 
-        if (phoneNumber != null && phoneNumber.trim().length() > 10) {
+        if (ValidationUtil.isBlank(phoneNumber)
+                || !phoneNumber.matches("^0\\d{9}$")) {
             throw new IllegalArgumentException(
-                    "Số điện thoại tối đa 10 ký tự."
+                    "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0."
             );
         }
 
@@ -46,7 +47,6 @@ public class UserService {
             user.setFullName(fullName);
             user.setPhoneNumber(emptyToNull(phoneNumber));
             user.setAddress(emptyToNull(address));
-            user.setAvatarUrl(emptyToNull(avatarUrl));
 
             if (!userRepository.updateProfile(user)) {
                 return null;

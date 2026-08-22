@@ -94,7 +94,8 @@ public class AdminHomestayService {
             throw new IllegalArgumentException("Tên homestay không hợp lệ.");
         }
         if (ValidationUtil.isBlank(homestay.getAddress())
-                || ValidationUtil.isBlank(homestay.getCity())) {
+                || ValidationUtil.isBlank(homestay.getCity())
+                || ValidationUtil.isBlank(homestay.getDistrict())) {
             throw new IllegalArgumentException("Địa chỉ không hợp lệ.");
         }
         if (homestay.getPricePerNight() == null

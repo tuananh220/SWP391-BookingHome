@@ -21,6 +21,7 @@ import java.sql.SQLException;
 import java.util.Random;
 
 public class AuthService implements IAuthService {
+
     private final IUserRepository userRepository;
     private final IPasswordResetRepository resetRepository;
 
@@ -69,8 +70,8 @@ public class AuthService implements IAuthService {
 
     @Override
     public boolean register(String fullName, String email,
-                            String password, String confirmPassword,
-                            String phoneNumber, String roleName) {
+            String password, String confirmPassword,
+            String phoneNumber, String roleName) {
         fullName = fullName == null ? null : fullName.trim();
         email = ValidationUtil.normalizeEmail(email);
         phoneNumber = phoneNumber == null ? null : phoneNumber.trim();
@@ -112,8 +113,8 @@ public class AuthService implements IAuthService {
     }
 
     private void validateRegistration(String fullName, String email,
-                                      String password, String confirmPassword,
-                                      String phoneNumber) {
+            String password, String confirmPassword,
+            String phoneNumber) {
         if (ValidationUtil.isBlank(fullName) || fullName.length() > 100) {
             throw new IllegalArgumentException(
                     "Họ tên không được để trống và tối đa 100 ký tự."
@@ -136,9 +137,10 @@ public class AuthService implements IAuthService {
             );
         }
 
-        if (phoneNumber != null && phoneNumber.length() > 20) {
+        if (ValidationUtil.isBlank(phoneNumber)
+                || !phoneNumber.matches("^0\\d{9}$")) {
             throw new IllegalArgumentException(
-                    "Số điện thoại tối đa 20 ký tự."
+                    "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng số 0."
             );
         }
     }

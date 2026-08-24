@@ -4,14 +4,20 @@
  */
 package controller;
 
+import entity.Payment;
+import entity.StayChangeRequest;
 import entity.User;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import service.PaymentService;
 import service.StayChangeService;
 
 /**
@@ -60,9 +66,26 @@ public class CustomerStayChangeListController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         User user = (User) request.getSession().getAttribute("currentUser");
+        List<StayChangeRequest> requests = new StayChangeService()
+            .getCustomerRequests(user.getUserId());
+        Map<Integer, Payment> pendingExtensionPayments
+            = new HashMap<Integer, Payment>();
+        PaymentService paymentService = new PaymentService();
+        for (StayChangeRequest item : requests) {
+            if ("Extension".equals(item.getRequestType())
+                && "Accepted".equals(item.getStatus())) {
+            Payment payment = paymentService.getPendingOnlinePayment(
+                item.getBookingId(), user.getUserId()
+            );
+            if (payment != null && "Extension".equals(
+                payment.getPaymentType())) {
+                pendingExtensionPayments.put(item.getRequestId(), payment);
+            }
+            }
+        }
+        request.setAttribute("requests", requests);
         request.setAttribute(
-                "requests",
-                new StayChangeService().getCustomerRequests(user.getUserId())
+            "pendingExtensionPayments", pendingExtensionPayments
         );
         request.getRequestDispatcher(
                 "/views/customer/stay-change-list.jsp"

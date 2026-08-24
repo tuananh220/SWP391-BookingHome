@@ -83,6 +83,22 @@
                                         <strong>Ghi chú:</strong> <c:out value="${item.customerNote}"/>
                                     </p>
                                 </c:if>
+                                <c:if test="${item.requestType == 'EarlyCheckout' && item.status == 'Accepted'}">
+                                    <section class="refund-account-summary">
+                                        <p><strong>Tài khoản nhận hoàn:</strong>
+                                            <c:out value="${item.refundAccountName}"/> ·
+                                            <c:out value="${item.refundBankName}"/> ·
+                                            <c:out value="${item.refundAccountNumber}"/></p>
+                                        <p><strong>Trạng thái hoàn:</strong>
+                                            <c:out value="${empty item.refundStatus ? 'Chưa tạo' : item.refundStatus}"/></p>
+                                        <c:if test="${item.refundStatus == 'Pending'}">
+                                            <form method="post" action="${pageContext.request.contextPath}/host/stay-change-action">
+                                                <input type="hidden" name="requestId" value="${item.requestId}">
+                                                <a class="accept-button" href="${pageContext.request.contextPath}/host/refund?requestId=${item.requestId}">Thanh Toán Hoàn Tiền</a>
+                                            </form>
+                                        </c:if>
+                                    </section>
+                                </c:if>
                                 <c:if test="${item.status == 'Pending'}">
                                     <div class="host-change-actions">
                                         <form method="post" action="${pageContext.request.contextPath}/host/stay-change-action">

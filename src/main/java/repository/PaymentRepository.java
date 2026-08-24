@@ -63,6 +63,30 @@ public class PaymentRepository extends DBContext
         try {
             connection.setAutoCommit(false);
 
+            String paymentType = null;
+            String typeSql = "SELECT p.PaymentType FROM Payments p "
+                    + "INNER JOIN PaymentMethods pm "
+                    + "ON pm.PaymentMethodID = p.PaymentMethodID "
+                    + "INNER JOIN Bookings b ON b.BookingID = p.BookingID "
+                    + "WHERE p.PaymentID = ? AND p.BookingID = ? "
+                    + "AND b.CustomerID = ? AND p.PaymentStatus = 'Pending' "
+                    + "AND pm.IsOnline = 1";
+            try (PreparedStatement statement
+                    = connection.prepareStatement(typeSql)) {
+                statement.setInt(1, paymentId);
+                statement.setInt(2, bookingId);
+                statement.setInt(3, customerId);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (resultSet.next()) {
+                        paymentType = resultSet.getString("PaymentType");
+                    }
+                }
+            }
+            if (paymentType == null) {
+                connection.rollback();
+                return false;
+            }
+
             String paymentSql = "UPDATE p SET p.PaymentStatus = 'Completed', "
                     + "p.TransactionID = ?, p.PaidAt = SYSDATETIME() "
                     + "FROM Payments p "
@@ -72,7 +96,10 @@ public class PaymentRepository extends DBContext
                     + "WHERE p.PaymentID = ? AND p.BookingID = ? "
                     + "AND b.CustomerID = ? AND p.PaymentStatus = 'Pending' "
                     + "AND pm.IsOnline = 1 "
-                    + "AND b.BookingStatus = 'Pending'";
+                    + "AND ((p.PaymentType = 'Booking' "
+                    + "AND b.BookingStatus = 'Pending') "
+                    + "OR (p.PaymentType = 'Extension' "
+                    + "AND b.BookingStatus = 'Confirmed'))";
 
             int affectedRows;
             try (PreparedStatement statement
@@ -89,19 +116,21 @@ public class PaymentRepository extends DBContext
                 return false;
             }
 
-            String bookingSql = "UPDATE Bookings SET "
-                    + "BookingStatus = 'Confirmed', "
-                    + "ConfirmedAt = SYSDATETIME(), "
-                    + "UpdatedAt = SYSDATETIME() "
-                    + "WHERE BookingID = ? AND CustomerID = ? "
-                    + "AND BookingStatus = 'Pending'";
-            try (PreparedStatement statement
-                    = connection.prepareStatement(bookingSql)) {
-                statement.setInt(1, bookingId);
-                statement.setInt(2, customerId);
-                if (statement.executeUpdate() == 0) {
-                    connection.rollback();
-                    return false;
+            if ("Booking".equals(paymentType)) {
+                String bookingSql = "UPDATE Bookings SET "
+                        + "BookingStatus = 'Confirmed', "
+                        + "ConfirmedAt = SYSDATETIME(), "
+                        + "UpdatedAt = SYSDATETIME() "
+                        + "WHERE BookingID = ? AND CustomerID = ? "
+                        + "AND BookingStatus = 'Pending'";
+                try (PreparedStatement statement
+                        = connection.prepareStatement(bookingSql)) {
+                    statement.setInt(1, bookingId);
+                    statement.setInt(2, customerId);
+                    if (statement.executeUpdate() == 0) {
+                        connection.rollback();
+                        return false;
+                    }
                 }
             }
 

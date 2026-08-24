@@ -58,27 +58,24 @@ public class StayChangeRepository extends DBContext
         return null;
     }
 
-        private Booking mapEligibleBooking(ResultSet resultSet)
+    private Booking mapEligibleBooking(ResultSet resultSet)
             throws SQLException {
         Booking booking = new Booking();
         booking.setBookingId(resultSet.getInt("BookingID"));
         booking.setCustomerId(resultSet.getInt("CustomerID"));
         booking.setHomestayId(resultSet.getInt("HomestayID"));
         booking.setCheckInDate(
-            resultSet.getDate("CheckInDate").toLocalDate()
-        );
+                resultSet.getDate("CheckInDate").toLocalDate());
         booking.setCheckOutDate(
-            resultSet.getDate("CheckOutDate").toLocalDate()
-        );
+                resultSet.getDate("CheckOutDate").toLocalDate());
         booking.setTotalGuests(resultSet.getInt("TotalGuests"));
         booking.setTotalAmount(resultSet.getBigDecimal("TotalAmount"));
         booking.setBookingStatus(resultSet.getString("BookingStatus"));
         booking.setPartialRefundPercentSnapshot(
-            resultSet.getBigDecimal("PartialRefundPercentSnapshot")
-        );
+                resultSet.getBigDecimal("PartialRefundPercentSnapshot"));
         booking.setHomestayTitle(resultSet.getString("HomestayTitle"));
         return booking;
-        }
+    }
 
     @Override
     public Booking findEligibleBookingForRequest(int requestId, int customerId)
@@ -118,7 +115,8 @@ public class StayChangeRepository extends DBContext
             statement.setDate(3, Date.valueOf(toDate));
             try (ResultSet resultSet = statement.executeQuery()) {
                 return resultSet.next()
-                        ? resultSet.getBigDecimal("Total") : BigDecimal.ZERO;
+                        ? resultSet.getBigDecimal("Total")
+                        : BigDecimal.ZERO;
             }
         }
     }
@@ -127,8 +125,9 @@ public class StayChangeRepository extends DBContext
     public int create(StayChangeRequest request) throws SQLException {
         String sql = "INSERT INTO StayChangeRequests "
                 + "(BookingID, CustomerID, RequestType, OriginalCheckOutDate, "
-                + "RequestedCheckOutDate, ExtraAmount, RefundAmount, Status, "
-                + "CustomerNote) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?)";
+                + "RequestedCheckOutDate, ExtraAmount, RefundAmount, "
+                + "RefundAccountName, RefundBankName, RefundAccountNumber, "
+                + "Status, CustomerNote) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', ?)";
         ensureConnection();
         try (PreparedStatement statement = connection.prepareStatement(
                 sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -139,7 +138,10 @@ public class StayChangeRepository extends DBContext
             statement.setDate(5, Date.valueOf(request.getRequestedCheckOutDate()));
             statement.setBigDecimal(6, request.getExtraAmount());
             statement.setBigDecimal(7, request.getRefundAmount());
-            statement.setString(8, request.getCustomerNote());
+            statement.setString(8, request.getRefundAccountName());
+            statement.setString(9, request.getRefundBankName());
+            statement.setString(10, request.getRefundAccountNumber());
+            statement.setString(11, request.getCustomerNote());
             statement.executeUpdate();
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 return keys.next() ? keys.getInt(1) : 0;
@@ -149,8 +151,7 @@ public class StayChangeRepository extends DBContext
 
     @Override
     public StayChangeRequest findByIdAndCustomerId(
-            int requestId, int customerId
-    ) throws SQLException {
+            int requestId, int customerId) throws SQLException {
         String sql = requestSelect()
                 + " WHERE s.RequestID = ? AND s.CustomerID = ?";
         ensureConnection();
@@ -169,6 +170,8 @@ public class StayChangeRepository extends DBContext
         String sql = "UPDATE StayChangeRequests SET RequestType = ?, "
                 + "OriginalCheckOutDate = ?, RequestedCheckOutDate = ?, "
                 + "ExtraAmount = ?, RefundAmount = ?, CustomerNote = ?, "
+                + "RefundAccountName = ?, RefundBankName = ?, "
+                + "RefundAccountNumber = ?, "
                 + "UpdatedAt = SYSDATETIME() WHERE RequestID = ? "
                 + "AND CustomerID = ? AND Status = 'Pending'";
         ensureConnection();
@@ -179,8 +182,11 @@ public class StayChangeRepository extends DBContext
             statement.setBigDecimal(4, request.getExtraAmount());
             statement.setBigDecimal(5, request.getRefundAmount());
             statement.setString(6, request.getCustomerNote());
-            statement.setInt(7, request.getRequestId());
-            statement.setInt(8, request.getCustomerId());
+            statement.setString(7, request.getRefundAccountName());
+            statement.setString(8, request.getRefundBankName());
+            statement.setString(9, request.getRefundAccountNumber());
+            statement.setInt(10, request.getRequestId());
+            statement.setInt(11, request.getCustomerId());
             return statement.executeUpdate() > 0;
         }
     }
@@ -190,8 +196,7 @@ public class StayChangeRepository extends DBContext
             throws SQLException {
         return queryRequests(
                 requestSelect() + " WHERE s.CustomerID = ? ORDER BY s.CreatedAt DESC",
-                customerId, null
-        );
+                customerId, null);
     }
 
     @Override
@@ -244,7 +249,8 @@ public class StayChangeRepository extends DBContext
             RequestLock lock = lockRequest(requestId, hostId);
             if (lock == null) {
                 connection.rollback();
-                return false;
+                throw new SQLException(
+                        "Yêu cầu phải đang Pending và booking phải ở trạng thái Confirmed.");
             }
             String sql = "UPDATE StayChangeRequests SET Status = 'Rejected', "
                     + "ResponseNote = ?, RespondedBy = ?, "
@@ -280,7 +286,8 @@ public class StayChangeRepository extends DBContext
             RequestLock lock = lockRequest(requestId, hostId);
             if (lock == null) {
                 connection.rollback();
-                return false;
+                throw new SQLException(
+                        "Yêu cầu phải đang Pending và booking phải ở trạng thái Confirmed.");
             }
 
             if ("Extension".equals(lock.requestType)) {
@@ -290,20 +297,82 @@ public class StayChangeRepository extends DBContext
             }
 
             String updateRequest = "UPDATE StayChangeRequests SET "
-                    + "Status = 'Accepted', RespondedBy = ?, "
+                    + "Status = 'Accepted', "
+                    + "RefundStatus = CASE WHEN RequestType = 'EarlyCheckout' "
+                    + "AND RefundAmount > 0 THEN 'Pending' ELSE RefundStatus END, "
+                    + "RespondedBy = ?, "
                     + "RespondedAt = SYSDATETIME(), UpdatedAt = SYSDATETIME() "
                     + "WHERE RequestID = ? AND Status = 'Pending'";
-            try (PreparedStatement statement
-                    = connection.prepareStatement(updateRequest)) {
+            try (PreparedStatement statement = connection.prepareStatement(updateRequest)) {
                 statement.setInt(1, hostId);
                 statement.setInt(2, requestId);
-                statement.executeUpdate();
+                if (statement.executeUpdate() == 0) {
+                    connection.rollback();
+                    throw new SQLException(
+                            "Yêu cầu đã được xử lý bởi một thao tác khác.");
+                }
             }
             createNotification(lock.customerId, hostId, lock.bookingId,
                     "Yêu cầu thay đổi lưu trú được chấp nhận",
                     "Chủ nhà đã chấp nhận yêu cầu "
-                    + ("Extension".equals(lock.requestType)
-                    ? "gia hạn." : "trả phòng sớm."));
+                            + ("Extension".equals(lock.requestType)
+                                    ? "gia hạn."
+                                    : "trả phòng sớm."));
+            connection.commit();
+            return true;
+        } catch (SQLException exception) {
+            connection.rollback();
+            throw exception;
+        } finally {
+            connection.setAutoCommit(oldAutoCommit);
+        }
+    }
+
+    @Override
+    public boolean completeRefund(int requestId, int hostId)
+            throws SQLException {
+        ensureConnection();
+        boolean oldAutoCommit = connection.getAutoCommit();
+        try {
+            connection.setAutoCommit(false);
+            String lockSql = "SELECT s.RequestID FROM StayChangeRequests s "
+                    + "INNER JOIN Bookings b ON b.BookingID = s.BookingID "
+                    + "INNER JOIN Homestays h ON h.HomestayID = b.HomestayID "
+                    + "WHERE s.RequestID = ? AND h.HostID = ? "
+                    + "AND s.RequestType = 'EarlyCheckout' "
+                    + "AND s.Status = 'Accepted' AND s.RefundStatus = 'Pending'";
+            try (PreparedStatement statement = connection.prepareStatement(lockSql)) {
+                statement.setInt(1, requestId);
+                statement.setInt(2, hostId);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (!resultSet.next()) {
+                        connection.rollback();
+                        return false;
+                    }
+                }
+            }
+
+            String refundSql = "UPDATE Refunds SET RefundStatus = 'Completed', "
+                    + "RefundedAt = SYSDATETIME() "
+                    + "WHERE StayChangeRequestID = ? AND RefundStatus = 'Pending'";
+            try (PreparedStatement statement = connection.prepareStatement(refundSql)) {
+                statement.setInt(1, requestId);
+                if (statement.executeUpdate() == 0) {
+                    connection.rollback();
+                    return false;
+                }
+            }
+
+            String requestSql = "UPDATE StayChangeRequests SET "
+                    + "RefundStatus = 'Completed', UpdatedAt = SYSDATETIME() "
+                    + "WHERE RequestID = ? AND RefundStatus = 'Pending'";
+            try (PreparedStatement statement = connection.prepareStatement(requestSql)) {
+                statement.setInt(1, requestId);
+                if (statement.executeUpdate() == 0) {
+                    connection.rollback();
+                    return false;
+                }
+            }
             connection.commit();
             return true;
         } catch (SQLException exception) {
@@ -331,18 +400,31 @@ public class StayChangeRepository extends DBContext
             }
         }
 
+        String updateNight = "UPDATE BookingNights SET HomestayID = ?, "
+                + "NightPrice = ?, IsActive = 1 WHERE BookingID = ? "
+                + "AND StayDate = ?";
         String insertNight = "INSERT INTO BookingNights "
                 + "(BookingID, HomestayID, StayDate, NightPrice, IsActive) "
-                + "VALUES (?, ?, ?, ?, 1)";
-        try (PreparedStatement statement = connection.prepareStatement(insertNight)) {
+                + "SELECT ?, ?, ?, ?, 1 WHERE NOT EXISTS ("
+                + "SELECT 1 FROM BookingNights WHERE BookingID = ? "
+                + "AND StayDate = ?)";
+        try (PreparedStatement updateStatement = connection.prepareStatement(updateNight);
+                PreparedStatement insertStatement = connection.prepareStatement(insertNight)) {
             for (BookingNight night : nights) {
-                statement.setInt(1, lock.bookingId);
-                statement.setInt(2, lock.homestayId);
-                statement.setDate(3, Date.valueOf(night.getStayDate()));
-                statement.setBigDecimal(4, night.getNightPrice());
-                statement.addBatch();
+                updateStatement.setInt(1, lock.homestayId);
+                updateStatement.setBigDecimal(2, night.getNightPrice());
+                updateStatement.setInt(3, lock.bookingId);
+                updateStatement.setDate(4, Date.valueOf(night.getStayDate()));
+                if (updateStatement.executeUpdate() == 0) {
+                    insertStatement.setInt(1, lock.bookingId);
+                    insertStatement.setInt(2, lock.homestayId);
+                    insertStatement.setDate(3, Date.valueOf(night.getStayDate()));
+                    insertStatement.setBigDecimal(4, night.getNightPrice());
+                    insertStatement.setInt(5, lock.bookingId);
+                    insertStatement.setDate(6, Date.valueOf(night.getStayDate()));
+                    insertStatement.executeUpdate();
+                }
             }
-            statement.executeBatch();
         }
 
         String bookingSql = "UPDATE Bookings SET CheckOutDate = ?, "
@@ -399,11 +481,10 @@ public class StayChangeRepository extends DBContext
             if (paymentId != null) {
                 String refundSql = "INSERT INTO Refunds "
                         + "(BookingID, PaymentID, StayChangeRequestID, Amount, "
-                        + "Reason, RefundStatus, RefundedAt) "
+                        + "Reason, RefundStatus) "
                         + "VALUES (?, ?, ?, ?, N'Trả phòng sớm', "
-                        + "'Completed', SYSDATETIME())";
-                try (PreparedStatement statement
-                        = connection.prepareStatement(refundSql)) {
+                        + "'Pending')";
+                try (PreparedStatement statement = connection.prepareStatement(refundSql)) {
                     statement.setInt(1, lock.bookingId);
                     statement.setInt(2, paymentId);
                     statement.setInt(3, lock.requestId);
@@ -493,7 +574,7 @@ public class StayChangeRepository extends DBContext
         }
         try (PreparedStatement statement = connection.prepareStatement(
                 "INSERT INTO UserNotifications "
-                + "(NotificationID, UserID, IsRead) VALUES (?, ?, 0)")) {
+                        + "(NotificationID, UserID, IsRead) VALUES (?, ?, 0)")) {
             statement.setInt(1, notificationId);
             statement.setInt(2, userId);
             statement.executeUpdate();
@@ -503,8 +584,7 @@ public class StayChangeRepository extends DBContext
     private List<StayChangeRequest> queryRequests(String sql, int firstId,
             String status)
             throws SQLException {
-        List<StayChangeRequest> requests
-                = new ArrayList<StayChangeRequest>();
+        List<StayChangeRequest> requests = new ArrayList<StayChangeRequest>();
         ensureConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, firstId);
@@ -524,7 +604,8 @@ public class StayChangeRepository extends DBContext
         return "SELECT s.RequestID, s.BookingID, s.CustomerID, "
                 + "s.RequestType, s.OriginalCheckOutDate, "
                 + "s.RequestedCheckOutDate, s.ExtraAmount, s.RefundAmount, "
-                + "s.Status, s.CustomerNote, s.ResponseNote, s.RespondedBy, "
+                + "s.RefundAccountName, s.RefundBankName, s.RefundAccountNumber, "
+                + "s.RefundStatus, s.Status, s.CustomerNote, s.ResponseNote, s.RespondedBy, "
                 + "s.RespondedAt, s.CreatedAt, b.HomestayID, "
                 + "h.Title AS HomestayTitle, u.FullName AS CustomerName "
                 + "FROM StayChangeRequests s INNER JOIN Bookings b "
@@ -547,6 +628,10 @@ public class StayChangeRepository extends DBContext
         request.setRequestedCheckOutDate(resultSet.getDate("RequestedCheckOutDate").toLocalDate());
         request.setExtraAmount(resultSet.getBigDecimal("ExtraAmount"));
         request.setRefundAmount(resultSet.getBigDecimal("RefundAmount"));
+        request.setRefundAccountName(resultSet.getString("RefundAccountName"));
+        request.setRefundBankName(resultSet.getString("RefundBankName"));
+        request.setRefundAccountNumber(resultSet.getString("RefundAccountNumber"));
+        request.setRefundStatus(resultSet.getString("RefundStatus"));
         request.setStatus(resultSet.getString("Status"));
         request.setCustomerNote(resultSet.getString("CustomerNote"));
         request.setResponseNote(resultSet.getString("ResponseNote"));

@@ -68,7 +68,8 @@ public class StayChangeService {
     public int createRequest(int bookingId, int customerId,
             String requestType,
             LocalDate requestedCheckOutDate,
-            String customerNote) {
+            String customerNote, String refundAccountName,
+            String refundBankName, String refundAccountNumber) {
         Booking booking = getEligibleBooking(bookingId, customerId);
         if (booking == null) {
             throw new IllegalArgumentException(
@@ -87,6 +88,8 @@ public class StayChangeService {
                 ValidationUtil.isBlank(customerNote)
                 ? null : customerNote.trim()
         );
+        setRefundAccount(request, requestType, refundAccountName,
+            refundBankName, refundAccountNumber);
 
         if ("Extension".equals(requestType)) {
             prepareExtension(request, booking);
@@ -106,7 +109,8 @@ public class StayChangeService {
 
     public boolean updateRequest(int requestId, int customerId,
             String requestType, LocalDate requestedCheckOutDate,
-            String customerNote) {
+            String customerNote, String refundAccountName,
+            String refundBankName, String refundAccountNumber) {
         StayChangeRequest existing = getCustomerRequest(
                 requestId, customerId
         );
@@ -137,6 +141,8 @@ public class StayChangeService {
                 ValidationUtil.isBlank(customerNote)
                 ? null : customerNote.trim()
         );
+        setRefundAccount(request, requestType, refundAccountName,
+            refundBankName, refundAccountNumber);
 
         if ("Extension".equals(requestType)) {
             prepareExtension(request, booking);
@@ -236,6 +242,18 @@ public class StayChangeService {
             return repository.accept(requestId, hostId, extensionNights);
         } catch (SQLException exception) {
             exception.printStackTrace();
+            throw new IllegalStateException(
+                    "Không thể chấp nhận yêu cầu: "
+                    + exception.getMessage(), exception
+            );
+        }
+    }
+
+    public boolean completeRefund(int requestId, int hostId) {
+        try {
+            return repository.completeRefund(requestId, hostId);
+        } catch (SQLException exception) {
+            exception.printStackTrace();
             return false;
         }
     }
@@ -303,5 +321,33 @@ public class StayChangeService {
                     "Ghi chú không được vượt quá 255 ký tự."
             );
         }
+    }
+
+    private void setRefundAccount(StayChangeRequest request,
+            String requestType, String accountName, String bankName,
+            String accountNumber) {
+        if (!"EarlyCheckout".equals(requestType)) {
+            return;
+        }
+        if (ValidationUtil.isBlank(accountName)
+                || ValidationUtil.isBlank(bankName)
+                || ValidationUtil.isBlank(accountNumber)) {
+            throw new IllegalArgumentException(
+                    "Vui lòng nhập đầy đủ thông tin tài khoản nhận hoàn tiền."
+            );
+        }
+        accountName = accountName.trim();
+        bankName = bankName.trim();
+        accountNumber = accountNumber.trim();
+        if (accountName.length() > 100 || bankName.length() > 100
+                || accountNumber.length() > 50
+                || !accountNumber.matches("[0-9]+")) {
+            throw new IllegalArgumentException(
+                    "Thông tin tài khoản hoàn tiền không hợp lệ."
+            );
+        }
+        request.setRefundAccountName(accountName);
+        request.setRefundBankName(bankName);
+        request.setRefundAccountNumber(accountNumber);
     }
 }

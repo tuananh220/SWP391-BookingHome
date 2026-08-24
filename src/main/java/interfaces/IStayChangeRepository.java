@@ -53,4 +53,6 @@ public interface IStayChangeRepository {
     boolean accept(int requestId, int hostId,
             List<BookingNight> extensionNights)
             throws SQLException;
+
+        boolean completeRefund(int requestId, int hostId) throws SQLException;
 }

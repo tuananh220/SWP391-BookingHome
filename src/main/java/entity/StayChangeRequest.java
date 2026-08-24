@@ -25,6 +25,10 @@ public class StayChangeRequest {
     private LocalDate requestedCheckOutDate;
     private BigDecimal extraAmount = BigDecimal.ZERO;
     private BigDecimal refundAmount = BigDecimal.ZERO;
+    private String refundAccountName;
+    private String refundBankName;
+    private String refundAccountNumber;
+    private String refundStatus;
     private String status;
     private String customerNote;
     private String responseNote;
@@ -121,6 +125,38 @@ public class StayChangeRequest {
 
     public void setRefundAmount(BigDecimal refundAmount) {
         this.refundAmount = refundAmount;
+    }
+
+    public String getRefundAccountName() {
+        return refundAccountName;
+    }
+
+    public void setRefundAccountName(String refundAccountName) {
+        this.refundAccountName = refundAccountName;
+    }
+
+    public String getRefundBankName() {
+        return refundBankName;
+    }
+
+    public void setRefundBankName(String refundBankName) {
+        this.refundBankName = refundBankName;
+    }
+
+    public String getRefundAccountNumber() {
+        return refundAccountNumber;
+    }
+
+    public void setRefundAccountNumber(String refundAccountNumber) {
+        this.refundAccountNumber = refundAccountNumber;
+    }
+
+    public String getRefundStatus() {
+        return refundStatus;
+    }
+
+    public void setRefundStatus(String refundStatus) {
+        this.refundStatus = refundStatus;
     }
 
     public String getStatus() {

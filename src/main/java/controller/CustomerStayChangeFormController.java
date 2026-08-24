@@ -139,7 +139,10 @@ public class CustomerStayChangeFormController extends HttpServlet {
                         requestId, user.getUserId(),
                         request.getParameter("requestType"),
                         requestedDate,
-                        request.getParameter("customerNote"))) {
+                        request.getParameter("customerNote"),
+                        request.getParameter("refundAccountName"),
+                        request.getParameter("refundBankName"),
+                        request.getParameter("refundAccountNumber"))) {
                     throw new IllegalStateException(
                             "Không thể chỉnh sửa yêu cầu."
                     );
@@ -148,7 +151,10 @@ public class CustomerStayChangeFormController extends HttpServlet {
                 int createdRequestId = service.createRequest(
                         bookingId, user.getUserId(),
                         request.getParameter("requestType"), requestedDate,
-                        request.getParameter("customerNote")
+                        request.getParameter("customerNote"),
+                        request.getParameter("refundAccountName"),
+                        request.getParameter("refundBankName"),
+                        request.getParameter("refundAccountNumber")
                 );
                 if (createdRequestId <= 0) {
                     throw new IllegalStateException("Không thể tạo yêu cầu.");

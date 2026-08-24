@@ -71,6 +71,17 @@
                                         <strong>Phản hồi:</strong> <c:out value="${item.responseNote}"/>
                                     </p>
                                 </c:if>
+                                <c:if test="${item.requestType == 'EarlyCheckout' && item.status == 'Accepted'}">
+                                    <p><strong>Hoàn tiền:</strong>
+                                        <c:out value="${empty item.refundStatus ? 'Đang chờ Host hoàn tiền' : item.refundStatus}"/></p>
+                                </c:if>
+                                <c:if test="${not empty pendingExtensionPayments[item.requestId]}">
+                                    <p class="response-note">
+                                        <strong>Thanh toán gia hạn:</strong>
+                                        <fmt:formatNumber value="${pendingExtensionPayments[item.requestId].amount}" pattern="#,##0"/> ₫
+                                        <a href="${pageContext.request.contextPath}/customer/payment?bookingId=${item.bookingId}">Thanh toán ngay</a>
+                                    </p>
+                                </c:if>
                                 <c:if test="${item.status == 'Pending'}">
                                     <div class="change-request-actions">
                                         <a href="${pageContext.request.contextPath}/customer/stay-change-form?requestId=${item.requestId}">Chỉnh sửa</a>

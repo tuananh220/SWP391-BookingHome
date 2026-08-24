@@ -33,7 +33,7 @@
                 <c:if test="${not empty editRequest}">
                     <input type="hidden" name="requestId" value="${editRequest.requestId}">
                 </c:if>
-                <label>Loại yêu cầu<select name="requestType" required>
+                <label>Loại yêu cầu<select id="requestType" name="requestType" required>
                         <option value="Extension" ${(empty editRequest ? param.requestType : editRequest.requestType) == 'Extension' ? 'selected' : ''}>Gia hạn thời gian lưu trú</option>
                         <option value="EarlyCheckout" ${(empty editRequest ? param.requestType : editRequest.requestType) == 'EarlyCheckout' ? 'selected' : ''}>Trả phòng sớm</option>
                     </select>
@@ -44,10 +44,28 @@
                         <c:out value="${not empty editRequest ? editRequest.customerNote : param.customerNote}"/>
                     </textarea>
                 </label>
+                <fieldset id="refundAccountFields" class="refund-account-fields" hidden>
+                    <legend>Thông tin nhận hoàn tiền (chỉ dùng khi trả phòng sớm)</legend>
+                    <label>Tên chủ tài khoản<input class="refund-account-input" type="text" name="refundAccountName" maxlength="100" value="${editRequest.refundAccountName}" placeholder="Nguyễn Văn A"></label>
+                    <label>Tên ngân hàng<input class="refund-account-input" type="text" name="refundBankName" maxlength="100" value="${editRequest.refundBankName}" placeholder="Tên ngân hàng"></label>
+                    <label>Số tài khoản<input class="refund-account-input" type="text" name="refundAccountNumber" maxlength="50" inputmode="numeric" value="${editRequest.refundAccountNumber}" placeholder="Chỉ nhập chữ số"></label>
+                </fieldset>
                 <button type="submit">${not empty editRequest ? 'Lưu thay đổi' : 'Gửi yêu cầu'}</button>
                 <small>Hệ thống sẽ tính tiền thêm hoặc tiền hoàn dự kiến sau khi gửi.</small>
             </form>
         </main>
+        <script>
+            const requestType = document.getElementById('requestType');
+            const refundFields = document.getElementById('refundAccountFields');
+            const refundInputs = document.querySelectorAll('.refund-account-input');
+            function toggleRefundFields() {
+                const isEarlyCheckout = requestType.value === 'EarlyCheckout';
+                refundFields.hidden = !isEarlyCheckout;
+                refundInputs.forEach(input => input.required = isEarlyCheckout);
+            }
+            requestType.addEventListener('change', toggleRefundFields);
+            toggleRefundFields();
+        </script>
     </body>
 </html>
 

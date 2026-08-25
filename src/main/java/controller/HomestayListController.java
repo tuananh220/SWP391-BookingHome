@@ -103,9 +103,8 @@ public class HomestayListController extends HttpServlet {
                 request.getParameter("maxPrice")
         ));
 
-        // Default guests = 2 if not provided
         Integer guests = ParseUtil.toPositiveInteger(request.getParameter("guests"));
-        criteria.setGuests(guests != null ? guests : 2);
+        criteria.setGuests(guests);
 
         String[] amenityIdValues = request.getParameterValues("amenityIds");
         if (amenityIdValues == null || amenityIdValues.length == 0) {
@@ -116,15 +115,11 @@ public class HomestayListController extends HttpServlet {
                 request.getParameter("minRating")
         ));
 
-        // Default checkIn = today, checkOut = tomorrow if not provided
-        LocalDate today    = LocalDate.now();
-        LocalDate tomorrow = LocalDate.now().plusDays(1);
-
         LocalDate checkIn = ParseUtil.toLocalDate(request.getParameter("checkIn"));
-        criteria.setCheckInDate(checkIn != null ? checkIn : today);
+        criteria.setCheckInDate(checkIn);
 
         LocalDate checkOut = ParseUtil.toLocalDate(request.getParameter("checkOut"));
-        criteria.setCheckOutDate(checkOut != null ? checkOut : tomorrow);
+        criteria.setCheckOutDate(checkOut);
 
         return criteria;
     }

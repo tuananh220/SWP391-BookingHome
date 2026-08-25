@@ -90,8 +90,6 @@ public class HostStayChangeActionController extends HttpServlet {
             boolean success;
             if ("accept".equals(action)) {
                 success = service.acceptRequest(requestId, user.getUserId());
-            } else if ("refund".equals(action)) {
-                success = service.completeRefund(requestId, user.getUserId());
             } else if ("reject".equals(action)) {
                 success = service.rejectRequest(
                         requestId,

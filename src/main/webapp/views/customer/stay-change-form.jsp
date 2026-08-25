@@ -6,6 +6,7 @@
 
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <!DOCTYPE html>
 <html lang="vi">
     <head>
@@ -38,6 +39,14 @@
                         <option value="EarlyCheckout" ${(empty editRequest ? param.requestType : editRequest.requestType) == 'EarlyCheckout' ? 'selected' : ''}>Trả phòng sớm</option>
                     </select>
                 </label>
+                <p class="form-hint">
+                    Khi trả phòng sớm, tiền hoàn dự kiến được tính theo chính sách:
+                    <strong><fmt:formatNumber value="${empty booking.partialRefundPercentSnapshot ? 0 : booking.partialRefundPercentSnapshot}" maxFractionDigits="2"/>%</strong>
+                    trên các đêm chưa sử dụng.<br/>
+                    Khi gia hạn, hệ thống sẽ tính tiền cần trả thêm theo giá các đêm
+                    từ ngày trả phòng hiện tại đến ngày trả phòng mới không áp dụng voucher.
+                </p>
+                
                 <label>Ngày trả phòng mong muốn<input type="date" name="requestedCheckOutDate" required value="${not empty editRequest ? editRequest.requestedCheckOutDate : param.requestedCheckOutDate}">
                 </label>
                 <label>Ghi chú<textarea name="customerNote" rows="5" maxlength="255" placeholder="Lý do hoặc yêu cầu dành cho chủ nhà">
@@ -46,9 +55,9 @@
                 </label>
                 <fieldset id="refundAccountFields" class="refund-account-fields" hidden>
                     <legend>Thông tin nhận hoàn tiền (chỉ dùng khi trả phòng sớm)</legend>
-                    <label>Tên chủ tài khoản<input class="refund-account-input" type="text" name="refundAccountName" maxlength="100" value="${editRequest.refundAccountName}" placeholder="Nguyễn Văn A"></label>
-                    <label>Tên ngân hàng<input class="refund-account-input" type="text" name="refundBankName" maxlength="100" value="${editRequest.refundBankName}" placeholder="Tên ngân hàng"></label>
-                    <label>Số tài khoản<input class="refund-account-input" type="text" name="refundAccountNumber" maxlength="50" inputmode="numeric" value="${editRequest.refundAccountNumber}" placeholder="Chỉ nhập chữ số"></label>
+                    <label>Tên chủ tài khoản<input class="refund-account-input" type="text" name="refundAccountName" minlength="2" maxlength="100" value="${editRequest.refundAccountName}" required></label>
+                    <label>Tên ngân hàng<input class="refund-account-input" type="text" name="refundBankName" minlength="2" maxlength="100" value="${editRequest.refundBankName}" required></label>
+                    <label>Số tài khoản<input class="refund-account-input" type="text" name="refundAccountNumber" minlength="6" maxlength="19" pattern="[0-9]+" inputmode="numeric" value="${editRequest.refundAccountNumber}" required></label>
                 </fieldset>
                 <button type="submit">${not empty editRequest ? 'Lưu thay đổi' : 'Gửi yêu cầu'}</button>
                 <small>Hệ thống sẽ tính tiền thêm hoặc tiền hoàn dự kiến sau khi gửi.</small>

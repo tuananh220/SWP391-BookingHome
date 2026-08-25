@@ -46,24 +46,14 @@
                 </label>
                 <label>Email<input type="email" name="email" maxlength="100" required value="<c:out value='${user.email}'/>">
                 </label>
-                <div class="admin-field-grid">
-                    <label>Số điện thoại<input type="text" name="phoneNumber" maxlength="20" value="<c:out value='${user.phoneNumber}'/>">
-                    </label>
-                    <label>Vai trò<select name="roleId" required>
-                            <c:forEach items="${roles}" var="role">
-                                <option value="${role.roleId}" ${user.roleId == role.roleId ? 'selected' : ''}>
-                                    <c:out value="${role.roleName}"/>
-                                </option>
-                            </c:forEach>
-                        </select>
-                    </label>
-                </div>
+                <label>Số điện thoại<input type="text" name="phoneNumber" maxlength="20" value="<c:out value='${user.phoneNumber}'/>">
+                </label>
                 <label>Địa chỉ<input type="text" name="address" maxlength="255" value="<c:out value='${user.address}'/>">
                 </label>
                 <label>Trạng thái<select name="status" required>
                         <option value="Active" ${user.status == 'Active' ? 'selected' : ''}>Active</option>
-                        <option value="Blocked" ${user.status == 'Blocked' ? 'selected' : ''}>Blocked</option>
-                        <option value="Pending" ${user.status == 'Pending' ? 'selected' : ''}>Pending</option>
+                   
+                        <option value="Deactive" ${user.status == 'Deactive' ? 'selected' : ''}>Deactive</option>
                     </select>
                 </label>
                 <div class="property-form-actions">

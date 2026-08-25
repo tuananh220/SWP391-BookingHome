@@ -70,23 +70,23 @@ public class HomestayService {
     }
 
     private void validateCriteria(HomestaySearchCriteria criteria) {
-        if (criteria == null || ValidationUtil.isBlank(criteria.getKeyword())) {
-            throw new IllegalArgumentException("Vui lòng nhập từ khóa tìm kiếm.");
+        if (criteria == null) {
+            throw new IllegalArgumentException("Thông tin tìm kiếm không hợp lệ.");
         }
 
         LocalDate checkIn = criteria.getCheckInDate();
         LocalDate checkOut = criteria.getCheckOutDate();
-        if (checkIn == null || checkOut == null) {
+        if ((checkIn == null) != (checkOut == null)) {
             throw new IllegalArgumentException(
-                    "Vui lòng chọn cả ngày nhận và ngày trả phòng."
+                "Vui lòng chọn cả ngày nhận và ngày trả phòng hoặc bỏ trống cả hai."
             );
         }
-        if (checkIn.isBefore(LocalDate.now())) {
+        if (checkIn != null && checkIn.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException(
                     "Ngày nhận phòng không được ở trong quá khứ."
             );
         }
-        if (!checkOut.isAfter(checkIn)) {
+        if (checkIn != null && !checkOut.isAfter(checkIn)) {
             throw new IllegalArgumentException(
                     "Ngày trả phòng phải sau ngày nhận phòng."
             );

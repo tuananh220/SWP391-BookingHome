@@ -91,17 +91,13 @@ public class AdminUserFormController extends HttpServlet {
         Integer userId = ParseUtil.toPositiveInteger(
                 request.getParameter("userId")
         );
-        Integer roleId = ParseUtil.toPositiveInteger(
-                request.getParameter("roleId")
-        );
-        if (userId == null || roleId == null) {
+        if (userId == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
 
         User user = new User();
         user.setUserId(userId);
-        user.setRoleId(roleId);
         user.setFullName(trim(request.getParameter("fullName")));
         user.setEmail(trim(request.getParameter("email")));
         user.setPhoneNumber(emptyToNull(request.getParameter("phoneNumber")));

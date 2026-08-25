@@ -262,9 +262,7 @@ public class StayChangeRepository extends DBContext
                 statement.setInt(3, requestId);
                 statement.executeUpdate();
             }
-            createNotification(lock.customerId, hostId, lock.bookingId,
-                    "Yêu cầu thay đổi lưu trú bị từ chối",
-                    "Chủ nhà đã từ chối yêu cầu. Lý do: " + responseNote);
+           
             connection.commit();
             return true;
         } catch (SQLException exception) {
@@ -276,8 +274,7 @@ public class StayChangeRepository extends DBContext
     }
 
     @Override
-    public boolean accept(int requestId, int hostId,
-            List<BookingNight> extensionNights)
+    public boolean accept(int requestId, int hostId)
             throws SQLException {
         ensureConnection();
         boolean oldAutoCommit = connection.getAutoCommit();
@@ -291,9 +288,11 @@ public class StayChangeRepository extends DBContext
             }
 
             if ("Extension".equals(lock.requestType)) {
-                acceptExtension(lock, extensionNights);
-            } else {
+                acceptExtension(lock);
+            } else if ("EarlyCheckout".equals(lock.requestType)) {
                 acceptEarlyCheckout(lock);
+            } else {
+                throw new SQLException("Loại request không hợp lệ.");
             }
 
             String updateRequest = "UPDATE StayChangeRequests SET "
@@ -311,13 +310,7 @@ public class StayChangeRepository extends DBContext
                     throw new SQLException(
                             "Yêu cầu đã được xử lý bởi một thao tác khác.");
                 }
-            }
-            createNotification(lock.customerId, hostId, lock.bookingId,
-                    "Yêu cầu thay đổi lưu trú được chấp nhận",
-                    "Chủ nhà đã chấp nhận yêu cầu "
-                            + ("Extension".equals(lock.requestType)
-                                    ? "gia hạn."
-                                    : "trả phòng sớm."));
+            }           
             connection.commit();
             return true;
         } catch (SQLException exception) {
@@ -335,12 +328,17 @@ public class StayChangeRepository extends DBContext
         boolean oldAutoCommit = connection.getAutoCommit();
         try {
             connection.setAutoCommit(false);
-            String lockSql = "SELECT s.RequestID FROM StayChangeRequests s "
+            String lockSql = "SELECT s.RequestID, s.BookingID, "
+                + "s.RequestedCheckOutDate, s.RefundAmount "
+                + "FROM StayChangeRequests s "
                     + "INNER JOIN Bookings b ON b.BookingID = s.BookingID "
                     + "INNER JOIN Homestays h ON h.HomestayID = b.HomestayID "
                     + "WHERE s.RequestID = ? AND h.HostID = ? "
                     + "AND s.RequestType = 'EarlyCheckout' "
                     + "AND s.Status = 'Accepted' AND s.RefundStatus = 'Pending'";
+            int bookingId;
+            LocalDate requestedCheckOut;
+            BigDecimal refundAmount;
             try (PreparedStatement statement = connection.prepareStatement(lockSql)) {
                 statement.setInt(1, requestId);
                 statement.setInt(2, hostId);
@@ -349,6 +347,10 @@ public class StayChangeRepository extends DBContext
                         connection.rollback();
                         return false;
                     }
+                    bookingId = resultSet.getInt("BookingID");
+                    requestedCheckOut = resultSet.getDate(
+                            "RequestedCheckOutDate").toLocalDate();
+                    refundAmount = resultSet.getBigDecimal("RefundAmount");
                 }
             }
 
@@ -373,6 +375,14 @@ public class StayChangeRepository extends DBContext
                     return false;
                 }
             }
+            if (!updateEarlyCheckoutBooking(
+                    bookingId, requestedCheckOut, refundAmount)) {
+                connection.rollback();
+                return false;
+            }
+                releaseEarlyCheckoutNights(
+                    bookingId, requestedCheckOut
+                );
             connection.commit();
             return true;
         } catch (SQLException exception) {
@@ -383,115 +393,85 @@ public class StayChangeRepository extends DBContext
         }
     }
 
-    private void acceptExtension(RequestLock lock,
-            List<BookingNight> nights)
+    private void acceptExtension(RequestLock lock)
             throws SQLException {
-        String conflictSql = "SELECT COUNT(*) AS Total FROM BookingNights "
-                + "WITH (UPDLOCK, HOLDLOCK) WHERE HomestayID = ? "
-                + "AND IsActive = 1 AND StayDate >= ? AND StayDate < ?";
-        try (PreparedStatement statement = connection.prepareStatement(conflictSql)) {
-            statement.setInt(1, lock.homestayId);
-            statement.setDate(2, Date.valueOf(lock.originalDate));
-            statement.setDate(3, Date.valueOf(lock.requestedDate));
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next() && resultSet.getInt("Total") > 0) {
-                    throw new SQLException("Các ngày gia hạn không còn trống.");
-                }
-            }
-        }
-
-        String updateNight = "UPDATE BookingNights SET HomestayID = ?, "
-                + "NightPrice = ?, IsActive = 1 WHERE BookingID = ? "
-                + "AND StayDate = ?";
-        String insertNight = "INSERT INTO BookingNights "
-                + "(BookingID, HomestayID, StayDate, NightPrice, IsActive) "
-                + "SELECT ?, ?, ?, ?, 1 WHERE NOT EXISTS ("
-                + "SELECT 1 FROM BookingNights WHERE BookingID = ? "
-                + "AND StayDate = ?)";
-        try (PreparedStatement updateStatement = connection.prepareStatement(updateNight);
-                PreparedStatement insertStatement = connection.prepareStatement(insertNight)) {
-            for (BookingNight night : nights) {
-                updateStatement.setInt(1, lock.homestayId);
-                updateStatement.setBigDecimal(2, night.getNightPrice());
-                updateStatement.setInt(3, lock.bookingId);
-                updateStatement.setDate(4, Date.valueOf(night.getStayDate()));
-                if (updateStatement.executeUpdate() == 0) {
-                    insertStatement.setInt(1, lock.bookingId);
-                    insertStatement.setInt(2, lock.homestayId);
-                    insertStatement.setDate(3, Date.valueOf(night.getStayDate()));
-                    insertStatement.setBigDecimal(4, night.getNightPrice());
-                    insertStatement.setInt(5, lock.bookingId);
-                    insertStatement.setDate(6, Date.valueOf(night.getStayDate()));
-                    insertStatement.executeUpdate();
-                }
-            }
-        }
-
-        String bookingSql = "UPDATE Bookings SET CheckOutDate = ?, "
-                + "OriginalAmount = OriginalAmount + ?, "
-                + "TotalAmount = TotalAmount + ?, UpdatedAt = SYSDATETIME() "
-                + "WHERE BookingID = ?";
-        try (PreparedStatement statement = connection.prepareStatement(bookingSql)) {
-            statement.setDate(1, Date.valueOf(lock.requestedDate));
-            statement.setBigDecimal(2, lock.extraAmount);
-            statement.setBigDecimal(3, lock.extraAmount);
-            statement.setInt(4, lock.bookingId);
-            statement.executeUpdate();
-        }
-
         Integer methodId = findLatestPaymentMethod(lock.bookingId);
-        if (methodId != null && lock.extraAmount.compareTo(BigDecimal.ZERO) > 0) {
-            String paymentSql = "INSERT INTO Payments "
-                    + "(BookingID, PaymentMethodID, PaymentType, Amount, "
-                    + "PaymentStatus) VALUES (?, ?, 'Extension', ?, 'Pending')";
-            try (PreparedStatement statement = connection.prepareStatement(paymentSql)) {
-                statement.setInt(1, lock.bookingId);
-                statement.setInt(2, methodId);
-                statement.setBigDecimal(3, lock.extraAmount);
-                statement.executeUpdate();
-            }
+        if (lock.extraAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new SQLException("Số tiền gia hạn không hợp lệ.");
+        }
+        if (methodId == null) {
+            throw new SQLException("Booking chưa có phương thức thanh toán.");
+        }
+        String paymentSql = "INSERT INTO Payments "
+                + "(BookingID, PaymentMethodID, StayChangeRequestID, "
+                + "PaymentType, Amount, PaymentStatus) "
+                + "VALUES (?, ?, ?, 'Extension', ?, 'Pending')";
+        try (PreparedStatement statement = connection.prepareStatement(paymentSql)) {
+            statement.setInt(1, lock.bookingId);
+            statement.setInt(2, methodId);
+            statement.setInt(3, lock.requestId);
+            statement.setBigDecimal(4, lock.extraAmount);
+            statement.executeUpdate();
         }
     }
 
     private void acceptEarlyCheckout(RequestLock lock) throws SQLException {
+        if (lock.refundAmount.compareTo(BigDecimal.ZERO) > 0) {
+            Integer paymentId = findCompletedPayment(lock.bookingId);
+            if (paymentId == null) {
+                throw new SQLException(
+                        "Booking chưa có giao dịch đã thanh toán."
+                );
+            }
+            String refundSql = "INSERT INTO Refunds "
+                    + "(BookingID, PaymentID, StayChangeRequestID, Amount, "
+                    + "Reason, RefundStatus) "
+                    + "VALUES (?, ?, ?, ?, N'Trả phòng sớm', "
+                    + "'Pending')";
+            try (PreparedStatement statement = connection.prepareStatement(refundSql)) {
+                statement.setInt(1, lock.bookingId);
+                statement.setInt(2, paymentId);
+                statement.setInt(3, lock.requestId);
+                statement.setBigDecimal(4, lock.refundAmount);
+                statement.executeUpdate();
+            }
+        } else {
+            if (!updateEarlyCheckoutBooking(
+                    lock.bookingId, lock.requestedDate, lock.refundAmount)) {
+                throw new SQLException("Không thể cập nhật booking.");
+            }
+            releaseEarlyCheckoutNights(
+                    lock.bookingId, lock.requestedDate
+            );
+        }
+    }
+
+    private void releaseEarlyCheckoutNights(int bookingId,
+            LocalDate requestedCheckOut) throws SQLException {
         String nightSql = "UPDATE BookingNights SET IsActive = 0 "
                 + "WHERE BookingID = ? AND StayDate >= ?";
         try (PreparedStatement statement = connection.prepareStatement(nightSql)) {
-            statement.setInt(1, lock.bookingId);
-            statement.setDate(2, Date.valueOf(lock.requestedDate));
+            statement.setInt(1, bookingId);
+            statement.setDate(2, Date.valueOf(requestedCheckOut));
             statement.executeUpdate();
         }
+    }
 
+    private boolean updateEarlyCheckoutBooking(int bookingId,
+            LocalDate requestedCheckOut, BigDecimal refundAmount)
+            throws SQLException {
         String bookingSql = "UPDATE Bookings SET CheckOutDate = ?, "
                 + "TotalAmount = CASE WHEN TotalAmount >= ? "
                 + "THEN TotalAmount - ? ELSE 0 END, "
                 + "RefundAmount = RefundAmount + ?, UpdatedAt = SYSDATETIME() "
                 + "WHERE BookingID = ?";
         try (PreparedStatement statement = connection.prepareStatement(bookingSql)) {
-            statement.setDate(1, Date.valueOf(lock.requestedDate));
-            statement.setBigDecimal(2, lock.refundAmount);
-            statement.setBigDecimal(3, lock.refundAmount);
-            statement.setBigDecimal(4, lock.refundAmount);
-            statement.setInt(5, lock.bookingId);
-            statement.executeUpdate();
-        }
-
-        if (lock.refundAmount.compareTo(BigDecimal.ZERO) > 0) {
-            Integer paymentId = findCompletedPayment(lock.bookingId);
-            if (paymentId != null) {
-                String refundSql = "INSERT INTO Refunds "
-                        + "(BookingID, PaymentID, StayChangeRequestID, Amount, "
-                        + "Reason, RefundStatus) "
-                        + "VALUES (?, ?, ?, ?, N'Trả phòng sớm', "
-                        + "'Pending')";
-                try (PreparedStatement statement = connection.prepareStatement(refundSql)) {
-                    statement.setInt(1, lock.bookingId);
-                    statement.setInt(2, paymentId);
-                    statement.setInt(3, lock.requestId);
-                    statement.setBigDecimal(4, lock.refundAmount);
-                    statement.executeUpdate();
-                }
-            }
+            statement.setDate(1, Date.valueOf(requestedCheckOut));
+            statement.setBigDecimal(2, refundAmount);
+            statement.setBigDecimal(3, refundAmount);
+            statement.setBigDecimal(4, refundAmount);
+            statement.setInt(5, bookingId);
+            return statement.executeUpdate() > 0;
         }
     }
 
@@ -529,8 +509,11 @@ public class StayChangeRepository extends DBContext
     }
 
     private Integer findLatestPaymentMethod(int bookingId) throws SQLException {
-        String sql = "SELECT TOP 1 PaymentMethodID FROM Payments "
-                + "WHERE BookingID = ? ORDER BY PaymentID DESC";
+        String sql = "SELECT TOP 1 p.PaymentMethodID FROM Payments p "
+            + "INNER JOIN PaymentMethods pm "
+            + "ON pm.PaymentMethodID = p.PaymentMethodID "
+            + "WHERE p.BookingID = ? AND pm.IsOnline = 1 "
+            + "AND pm.IsActive = 1 ORDER BY p.PaymentID DESC";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, bookingId);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -551,36 +534,7 @@ public class StayChangeRepository extends DBContext
         }
     }
 
-    private void createNotification(int userId, int createdById,
-            int bookingId, String title,
-            String message) throws SQLException {
-        String sql = "INSERT INTO Notifications "
-                + "(Title, Message, Type, RelatedID, CreatedByID) "
-                + "VALUES (?, ?, 'StayChange', ?, ?)";
-        int notificationId;
-        try (PreparedStatement statement = connection.prepareStatement(
-                sql, Statement.RETURN_GENERATED_KEYS)) {
-            statement.setString(1, title);
-            statement.setString(2, message);
-            statement.setInt(3, bookingId);
-            statement.setInt(4, createdById);
-            statement.executeUpdate();
-            try (ResultSet keys = statement.getGeneratedKeys()) {
-                if (!keys.next()) {
-                    throw new SQLException("Không thể tạo thông báo.");
-                }
-                notificationId = keys.getInt(1);
-            }
-        }
-        try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO UserNotifications "
-                        + "(NotificationID, UserID, IsRead) VALUES (?, ?, 0)")) {
-            statement.setInt(1, notificationId);
-            statement.setInt(2, userId);
-            statement.executeUpdate();
-        }
-    }
-
+    
     private List<StayChangeRequest> queryRequests(String sql, int firstId,
             String status)
             throws SQLException {

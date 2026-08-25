@@ -64,19 +64,21 @@ public class CustomerStayChangeFormController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         Integer requestId = ParseUtil.toPositiveInteger(
-            request.getParameter("requestId")
+                request.getParameter("requestId")
         );
         Integer bookingId = ParseUtil.toPositiveInteger(
-            request.getParameter("bookingId")
+                request.getParameter("bookingId")
         );
         User user = getUser(request);
         StayChangeService service = new StayChangeService();
-        StayChangeRequest existing = requestId == null
-            ? null : service.getCustomerRequest(requestId, user.getUserId());
+        StayChangeRequest existing = null;
+        if (requestId != null) {
+            existing = service.getCustomerRequest(requestId, user.getUserId());
+        }
         if (requestId != null && (existing == null
-            || !"Pending".equals(existing.getStatus()))) {
+                || !"Pending".equals(existing.getStatus()))) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST,
-                "Chỉ có thể chỉnh sửa yêu cầu đang chờ xử lý.");
+                    "Chỉ có thể chỉnh sửa yêu cầu đang chờ xử lý.");
             return;
         }
         if (existing != null) {
@@ -86,11 +88,13 @@ public class CustomerStayChangeFormController extends HttpServlet {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
-        Booking booking = existing == null
-            ? service.getEligibleBooking(bookingId, user.getUserId())
-            : service.getEligibleBookingForRequest(
-                requestId, user.getUserId()
-            );
+        Booking booking;
+        if (existing == null) {
+            booking = service.getEligibleBooking(bookingId, user.getUserId());
+        } else {
+            booking = service.getEligibleBookingForRequest(requestId, user.getUserId());
+        }
+
         if (booking == null) {
             response.sendError(
                     HttpServletResponse.SC_BAD_REQUEST,
@@ -121,7 +125,7 @@ public class CustomerStayChangeFormController extends HttpServlet {
                 request.getParameter("bookingId")
         );
         Integer requestId = ParseUtil.toPositiveInteger(
-            request.getParameter("requestId")
+                request.getParameter("requestId")
         );
         LocalDate requestedDate = ParseUtil.toLocalDate(
                 request.getParameter("requestedCheckOutDate")
@@ -163,28 +167,28 @@ public class CustomerStayChangeFormController extends HttpServlet {
             request.getSession().setAttribute(
                     "flashSuccess",
                     requestId == null
-                    ? "Đã gửi yêu cầu đến chủ nhà."
-                    : "Đã cập nhật yêu cầu."
+                            ? "Đã gửi yêu cầu đến chủ nhà."
+                            : "Đã cập nhật yêu cầu."
             );
             response.sendRedirect(
                     request.getContextPath()
                     + "/customer/stay-change-requests"
             );
         } catch (IllegalArgumentException | IllegalStateException exception) {
-            Booking booking = service.getEligibleBooking(
-                    bookingId == null ? 0 : bookingId, user.getUserId()
-            );
-                StayChangeRequest editRequest = requestId == null
-                    ? null : service.getCustomerRequest(
-                        requestId, user.getUserId()
-                    );
-                if (editRequest != null) {
-                booking = service.getEligibleBookingForRequest(
-                    requestId, user.getUserId()
-                );
-                }
+            Booking booking = null;
+            StayChangeRequest editRequest = null;
+
+            if (bookingId != null) {
+                booking = service.getEligibleBooking(bookingId, user.getUserId());
+            }
+
+            if (requestId != null) {
+                editRequest = service.getCustomerRequest(requestId, user.getUserId());
+
+                booking = service.getEligibleBookingForRequest(requestId, user.getUserId());
+            }
             request.setAttribute("booking", booking);
-                request.setAttribute("editRequest", editRequest);
+            request.setAttribute("editRequest", editRequest);
             request.setAttribute("error", exception.getMessage());
             request.getRequestDispatcher(
                     "/views/customer/stay-change-form.jsp"

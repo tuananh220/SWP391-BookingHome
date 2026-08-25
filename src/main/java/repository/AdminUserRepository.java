@@ -143,18 +143,17 @@ public class AdminUserRepository extends DBContext
 
     @Override
     public boolean updateUser(User user) throws SQLException {
-        String sql = "UPDATE Users SET RoleID = ?, FullName = ?, Email = ?, "
-                + "PhoneNumber = ?, Address = ?, Status = ?, "
+        String sql = "UPDATE Users SET FullName = ?, Email = ?, "
+            + "PhoneNumber = ?, Address = ?, Status = ?, "
                 + "UpdatedAt = SYSDATETIME() WHERE UserID = ?";
         ensureConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, user.getRoleId());
-            statement.setString(2, user.getFullName());
-            statement.setString(3, user.getEmail());
-            statement.setString(4, user.getPhoneNumber());
-            statement.setString(5, user.getAddress());
-            statement.setString(6, user.getStatus());
-            statement.setInt(7, user.getUserId());
+            statement.setString(1, user.getFullName());
+            statement.setString(2, user.getEmail());
+            statement.setString(3, user.getPhoneNumber());
+            statement.setString(4, user.getAddress());
+            statement.setString(5, user.getStatus());
+            statement.setInt(6, user.getUserId());
             return statement.executeUpdate() > 0;
         }
     }

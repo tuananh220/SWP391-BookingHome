@@ -9,7 +9,6 @@ package interfaces;
  * @author Admin
  */
 import entity.Booking;
-import entity.BookingNight;
 import entity.StayChangeRequest;
 
 import java.math.BigDecimal;
@@ -50,9 +49,7 @@ public interface IStayChangeRepository {
     boolean reject(int requestId, int hostId, String responseNote)
             throws SQLException;
 
-    boolean accept(int requestId, int hostId,
-            List<BookingNight> extensionNights)
-            throws SQLException;
+        boolean accept(int requestId, int hostId) throws SQLException;
 
         boolean completeRefund(int requestId, int hostId) throws SQLException;
 }

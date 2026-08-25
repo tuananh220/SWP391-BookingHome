@@ -67,14 +67,15 @@ public class AdminUserService {
     }
 
     public boolean updateUser(User user, int currentAdminId) {
+        User existingUser = getUser(user.getUserId());
+        if (existingUser == null) {
+            throw new IllegalArgumentException("Không tìm thấy tài khoản.");
+        }
         validate(user);
         if (user.getUserId() == currentAdminId) {
-            User currentAdmin = getUser(currentAdminId);
-            if (currentAdmin == null
-                    || user.getRoleId() != currentAdmin.getRoleId()
-                    || !"Active".equals(user.getStatus())) {
+            if (!"Active".equals(user.getStatus())) {
                 throw new IllegalArgumentException(
-                        "Admin không thể tự hạ quyền hoặc khóa tài khoản của mình."
+                        "Admin không thể tự khóa tài khoản của mình."
                 );
             }
         }
@@ -120,10 +121,7 @@ public class AdminUserService {
                 || user.getEmail().length() > 100) {
             throw new IllegalArgumentException("Email không hợp lệ.");
         }
-        if (user.getRoleId() <= 0) {
-            throw new IllegalArgumentException("Vai trò không hợp lệ.");
-        }
-        if (!Arrays.asList("Active", "Blocked", "Pending")
+        if (!Arrays.asList("Active", "Deactive")
                 .contains(user.getStatus())) {
             throw new IllegalArgumentException("Trạng thái không hợp lệ.");
         }

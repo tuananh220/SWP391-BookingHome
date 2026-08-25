@@ -71,7 +71,7 @@
                                     <span id="guestsDecBtn" class="stepper-btn" role="button"
                                         aria-label="Giảm số khách">−</span>
                                     <input type="number" id="guestsInput" name="guests" min="1" max="30"
-                                        value="<c:out value='${criteria.guests != null ? criteria.guests : 2}'/>"
+                                        value="<c:out value='${criteria.guests}'/>"
                                         readonly>
                                     <span id="guestsIncBtn" class="stepper-btn" role="button"
                                         aria-label="Tăng số khách">+</span>
@@ -208,21 +208,9 @@
                                 + String(now.getMonth() + 1).padStart(2, '0') + '-'
                                 + String(now.getDate()).padStart(2, '0');
 
-                            var tmrRow = new Date(now);
-                            tmrRow.setDate(tmrRow.getDate() + 1);
-                            var tomorrowStr = tmrRow.getFullYear() + '-'
-                                + String(tmrRow.getMonth() + 1).padStart(2, '0') + '-'
-                                + String(tmrRow.getDate()).padStart(2, '0');
-
                             // Set min constraints so date-picker blocks past dates
                             checkInEl.min = todayStr;
-                            checkOutEl.min = tomorrowStr;
-
-                            // ── Override server defaults with real client-side dates ──
-                            // Only applies when loading without explicit URL params
-                            // (server may have a different timezone offset)
-                            if (!checkInEl.value || checkInEl.value < todayStr) checkInEl.value = todayStr;
-                            if (!checkOutEl.value || checkOutEl.value <= checkInEl.value) checkOutEl.value = tomorrowStr;
+                            checkOutEl.min = todayStr;
 
                             // ── Helper: get next day string from a YYYY-MM-DD string ──
                             function nextDay(dateStr) {
@@ -243,7 +231,7 @@
                                         checkOutEl.value = coMin;
                                     }
                                 } else {
-                                    checkOutEl.min = tomorrowStr;
+                                    checkOutEl.min = todayStr;
                                 }
                             });
 
@@ -268,7 +256,12 @@
                             var MAX_GUESTS = 30;
 
                             function updateStepperState() {
-                                var val = parseInt(guestsEl.value, 10) || 1;
+                                var val = parseInt(guestsEl.value, 10);
+                                if (isNaN(val)) {
+                                    decBtn.classList.add('stepper-disabled');
+                                    incBtn.classList.remove('stepper-disabled');
+                                    return;
+                                }
                                 if (val < 1) { guestsEl.value = 1; val = 1; }
                                 if (val > MAX_GUESTS) { guestsEl.value = MAX_GUESTS; val = MAX_GUESTS; }
                                 decBtn.classList.toggle('stepper-disabled', val <= 1);

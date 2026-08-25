@@ -56,6 +56,12 @@ public class HostVoucherService {
 
     public int create(Voucher voucher) {
         normalizeAndValidate(voucher, 0);
+        if (voucher.getStartDate() == null
+            || voucher.getStartDate().isBefore(java.time.LocalDateTime.now())) {
+            throw new IllegalArgumentException(
+                    "Ngày bắt đầu voucher không được là ngày/giờ trong quá khứ."
+            );
+        }
         try {
             if (repository.existsCode(voucher.getVoucherCode(), null)) {
                 throw new IllegalArgumentException("Mã voucher đã tồn tại.");
@@ -126,7 +132,7 @@ public class HostVoucherService {
             );
         }
         if (voucher.getMaxDiscountAmount() != null
-                && voucher.getMaxDiscountAmount().compareTo(BigDecimal.ZERO) < 0) {
+                && voucher.getMaxDiscountAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException(
                     "Mức giảm tối đa không hợp lệ."
             );

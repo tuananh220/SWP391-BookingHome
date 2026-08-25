@@ -10,7 +10,18 @@
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>Tìm homestay</title>
-                    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalog.css?v=3">
+                    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalog.css?v=7">
+                    <style>
+                        .search-form{align-items:flex-start}
+                        .search-form>*{align-self:flex-start;min-width:0}
+                        .search-form input:not([type="checkbox"]),.search-form select{height:43px;max-height:43px;box-sizing:border-box}
+                        .search-form>button{align-self:flex-end;height:43px;max-height:43px;box-sizing:border-box}
+                        .search-dropdown-field{position:relative}
+                        .search-dropdown-field details{position:relative}
+                        .search-dropdown-field>summary,.search-dropdown-field summary{list-style:none;cursor:pointer}
+                        .search-dropdown-field summary::-webkit-details-marker{display:none}
+                        .search-dropdown-panel{position:absolute;top:100%;left:0;z-index:40;width:280px;max-width:90%;max-height:240px;overflow:auto;margin-top:4px;padding:12px;background:#fff;border:1px solid #ddd9d0;box-shadow:0 12px 32px rgba(0,0,0,.15)}
+                    </style>
                     <script src="${pageContext.request.contextPath}/assets/js/address-selector.js"></script>
                 </head>
 
@@ -87,7 +98,8 @@
                             </label>
                             <div class="search-dropdown-field">
                                 <span class="field-label">Tiện ích</span>
-                                <div class="search-dropdown-trigger" tabindex="0">
+                                <details>
+                                <summary class="search-dropdown-trigger">
                                     <c:choose>
                                         <c:when test="${not empty criteria.amenityIds}">
                                             <span class="trigger-text">${criteria.amenityIds.size()} tiện ích đã
@@ -98,7 +110,7 @@
                                         </c:otherwise>
                                     </c:choose>
                                     <span class="dropdown-arrow">▾</span>
-                                </div>
+                                </summary>
                                 <div class="search-dropdown-panel">
                                     <div class="dropdown-amenities-list">
                                         <c:forEach items="${amenities}" var="amenity">
@@ -113,6 +125,7 @@
                                         </c:forEach>
                                     </div>
                                 </div>
+                                </details>
                             </div>
                             <label>Đánh giá
                                 <select name="minRating">

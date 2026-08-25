@@ -73,6 +73,7 @@
                                             <input type="radio" name="cancellationPolicyId" value="${policy.policyId}"
                                                 required ${form.cancellationPolicyId==policy.policyId ? 'checked' : ''
                                                 }>
+                                            <div class="policy-picker-inner">
                                             <div class="policy-card-head">
                                                 <div><small>POLICY #${policy.policyId}</small>
                                                     <h2>
@@ -91,6 +92,7 @@
                                                             maxFractionDigits="0" />%
                                                     </b> trước ${policy.partialRefundDays} ngày</span>
                                                 <span><b>0%</b> sau thời hạn</span>
+                                            </div>
                                             </div>
                                         </label>
                                     </c:forEach>

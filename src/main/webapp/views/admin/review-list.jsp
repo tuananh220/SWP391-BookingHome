@@ -15,21 +15,9 @@
         <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalog.css?v=3">
     </head>
     <body class="admin-body">
-        <aside class="admin-sidebar">
-            <a class="admin-logo" href="${pageContext.request.contextPath}/admin/dashboard">HOMESTAY<br>
-                <span>ADMIN</span>
-            </a>
-            <nav>
-                <a href="${pageContext.request.contextPath}/admin/dashboard">Tổng quan</a>
-                <a href="${pageContext.request.contextPath}/admin/users">Tài khoản</a>
-                <a href="${pageContext.request.contextPath}/admin/homestays">Homestay</a>
-                <a class="active" href="${pageContext.request.contextPath}/admin/reviews">Đánh giá</a>
-                <a href="${pageContext.request.contextPath}/admin/policies">Chính sách hủy</a>
-            </nav>
-            <form method="post" action="${pageContext.request.contextPath}/logout">
-                <button>Đăng xuất</button>
-            </form>
-        </aside>
+        <jsp:include page="/views/fragments/admin-sidebar.jsp">
+            <jsp:param name="active" value="reviews"/>
+        </jsp:include>
         <main class="admin-main">
             <header class="admin-page-head">
                 <div>

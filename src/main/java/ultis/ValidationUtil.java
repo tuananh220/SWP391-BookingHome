@@ -14,6 +14,10 @@ public final class ValidationUtil {
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
             "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
     );
+    private static final Pattern IMAGE_URL_PATTERN = Pattern.compile(
+            "^https?://.+\\.(jpg|jpeg|png|gif|webp|bmp|svg)(?:\\?.*)?(?:#.*)?$",
+            Pattern.CASE_INSENSITIVE
+    );
 
     private ValidationUtil() {
     }
@@ -28,5 +32,9 @@ public final class ValidationUtil {
 
     public static String normalizeEmail(String email) {
         return email == null ? null : email.trim().toLowerCase();
+    }
+
+    public static boolean isImageUrl(String url) {
+        return url != null && IMAGE_URL_PATTERN.matcher(url.trim()).matches();
     } 
 }

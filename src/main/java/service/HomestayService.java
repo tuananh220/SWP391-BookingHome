@@ -13,8 +13,6 @@ import entity.Homestay;
 import entity.HomestaySearchCriteria;
 import interfaces.IHomestayRepository;
 import repository.HomestayRepository;
-import ultis.ValidationUtil;
-
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -70,8 +68,8 @@ public class HomestayService {
     }
 
     private void validateCriteria(HomestaySearchCriteria criteria) {
-        if (criteria == null || ValidationUtil.isBlank(criteria.getKeyword())) {
-            throw new IllegalArgumentException("Vui lòng nhập từ khóa tìm kiếm.");
+        if (criteria == null) {
+            throw new IllegalArgumentException("Thiếu điều kiện tìm kiếm.");
         }
 
         LocalDate checkIn = criteria.getCheckInDate();

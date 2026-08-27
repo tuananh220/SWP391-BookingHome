@@ -1944,19 +1944,37 @@ body{
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap:20px;
+    gap:28px;
     border-left:4px solid #b67c2d
+}
+.stay-change-invite > div:first-child{
+    min-width:0
+}
+.stay-change-invite .detail-actions{
+    display:flex;
+    flex:0 1 360px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+    gap:10px
 }
 .stay-change-invite h2{
     margin-bottom:7px
 }
 .stay-change-invite a{
-    flex:none;
-    padding:13px 17px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:44px;
+    padding:10px 16px;
     background:#b67c2d;
     color:#fff;
     text-decoration:none;
-    font-weight:800
+    font-weight:800;
+    line-height:1.35;
+    text-align:center
+}
+.stay-change-invite .detail-actions a:last-child{
+    background:#8b642f
 }
 .change-request-list,.host-change-grid{
     display:grid;
@@ -3034,6 +3052,18 @@ body{
     }
     .host-change-grid{
         grid-template-columns:1fr
+    }
+    .stay-change-invite{
+        align-items:stretch;
+        flex-direction:column;
+        gap:18px
+    }
+    .stay-change-invite .detail-actions{
+        flex:1 1 auto;
+        justify-content:stretch
+    }
+    .stay-change-invite .detail-actions a{
+        flex:1 1 100%
     }
     .change-request-data{
         grid-template-columns:repeat(2,1fr)

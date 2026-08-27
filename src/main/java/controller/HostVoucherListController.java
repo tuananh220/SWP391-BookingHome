@@ -60,8 +60,8 @@ public class HostVoucherListController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         User currentUser = (User) request.getSession()
-                .getAttribute("currentUser");
-        HostVoucherService service = new HostVoucherService();
+                .getAttribute("currentUser");// lay thong tin user dang dang nhap tu session
+        HostVoucherService service = new HostVoucherService();// khoi tao service de lay thong tin voucher tu database
         request.setAttribute(
                 "vouchers", service.getVouchers(currentUser.getUserId())
         );

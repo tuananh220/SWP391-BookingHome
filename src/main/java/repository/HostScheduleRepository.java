@@ -12,6 +12,7 @@ import dal.DBContext;
 import entity.HomestaySchedule;
 import interfaces.IHostScheduleRepository;
 
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -86,6 +87,53 @@ public class HostScheduleRepository extends DBContext
                     entry.setBookingId(resultSet.getInt("BookingID"));
                     entry.setLockReason("Booked");
                     entries.add(entry);
+                }
+            }
+        }
+
+        // Check for dates within active bookings that may not have BookingNights
+        String activeBookingsSql = "SELECT DISTINCT b.BookingID, b.HomestayID, "
+                + "b.CheckInDate, b.CheckOutDate FROM Bookings b "
+                + "INNER JOIN Homestays h ON h.HomestayID = b.HomestayID "
+                + "WHERE b.HomestayID = ? AND h.HostID = ? "
+                + "AND b.BookingStatus IN ('Pending', 'Confirmed') "
+                + "AND b.CheckInDate < ? AND b.CheckOutDate > ?";
+        try (PreparedStatement statement
+                = connection.prepareStatement(activeBookingsSql)) {
+            statement.setInt(1, homestayId);
+            statement.setInt(2, hostId);
+            statement.setDate(3, Date.valueOf(toDate));
+            statement.setDate(4, Date.valueOf(fromDate));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    int bookingId = resultSet.getInt("BookingID");
+                    java.time.LocalDate checkIn = resultSet.getDate("CheckInDate")
+                            .toLocalDate();
+                    java.time.LocalDate checkOut = resultSet.getDate("CheckOutDate")
+                            .toLocalDate();
+
+                    // Mark all dates in range [checkIn, checkOut) as booked
+                    java.time.LocalDate date = checkIn.isBefore(fromDate)
+                            ? fromDate
+                            : checkIn;
+                    while (date.isBefore(checkOut) && !date.isAfter(toDate)) {
+                        final java.time.LocalDate currentDate = date;
+                        boolean alreadyExists = entries.stream()
+                                .anyMatch(e -> e.getScheduleDate().equals(currentDate)
+                                        && e.isBooked());
+                        if (!alreadyExists) {
+                            HomestaySchedule entry = new HomestaySchedule();
+                            entry.setHomestayId(homestayId);
+                            entry.setScheduleDate(currentDate);
+                            entry.setEffectivePrice(BigDecimal.ZERO);
+                            entry.setAvailable(false);
+                            entry.setBooked(true);
+                            entry.setBookingId(bookingId);
+                            entry.setLockReason("Booked");
+                            entries.add(entry);
+                        }
+                        date = date.plusDays(1);
+                    }
                 }
             }
         }

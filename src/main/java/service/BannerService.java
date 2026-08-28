@@ -95,6 +95,12 @@ public class BannerService {
             throw new IllegalArgumentException("URL hình ảnh không hợp lệ.");
         }
         banner.setImageUrl(banner.getImageUrl().trim());
+        if (!ValidationUtil.isImageUrl(banner.getImageUrl())) {
+            throw new IllegalArgumentException(
+                    "URL hình ảnh phải bắt đầu bằng http/https và kết thúc "
+                    + "bằng .jpg, .jpeg, .png, .gif, .webp, .bmp hoặc .svg."
+            );
+        }
         if (banner.getTitle() != null) {
             banner.setTitle(banner.getTitle().trim());
             if (banner.getTitle().length() > 100) {

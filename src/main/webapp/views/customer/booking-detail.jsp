@@ -13,7 +13,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Booking #${booking.bookingId}</title>
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalog.css?v=3">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalog.css?v=4">
     </head>
     <body>
         <jsp:include page="/views/fragments/customer-header.jsp"/>

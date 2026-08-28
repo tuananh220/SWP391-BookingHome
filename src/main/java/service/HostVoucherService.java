@@ -57,7 +57,7 @@ public class HostVoucherService {
     public int create(Voucher voucher) {
         normalizeAndValidate(voucher, 0);
         if (voucher.getStartDate() == null
-            || voucher.getStartDate().isBefore(java.time.LocalDateTime.now())) {
+            || voucher.getStartDate().isBefore(java.time.LocalDateTime.now())) {// check xem co trung ngay trong qua khu hay khong
             throw new IllegalArgumentException(
                     "Ngày bắt đầu voucher không được là ngày/giờ trong quá khứ."
             );

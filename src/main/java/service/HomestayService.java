@@ -13,8 +13,6 @@ import entity.Homestay;
 import entity.HomestaySearchCriteria;
 import interfaces.IHomestayRepository;
 import repository.HomestayRepository;
-import ultis.ValidationUtil;
-
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDate;

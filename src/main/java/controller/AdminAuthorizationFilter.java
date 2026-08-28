@@ -16,29 +16,29 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-@WebFilter(urlPatterns = {"/admin/*"})
+@WebFilter(urlPatterns = {"/admin/*"}) //moi request bat dau bang /admin se duoc filter nay xu ly
 public class AdminAuthorizationFilter implements Filter {
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response,
+    public void doFilter(ServletRequest request, ServletResponse response,// ham doFilter duoc goi khi co request den /admin/*
                          FilterChain chain)
             throws IOException, ServletException {
-        HttpServletRequest httpRequest = (HttpServletRequest) request;
+        HttpServletRequest httpRequest = (HttpServletRequest) request; //
         HttpServletResponse httpResponse = (HttpServletResponse) response;
-        User user = null;
+        User user = null; //kiem tra xem user hien tai co phai la admin hay khong
         if (httpRequest.getSession(false) != null) {
             user = (User) httpRequest.getSession(false)
-                    .getAttribute("currentUser");
+                    .getAttribute("currentUser"); //lay thong tin user hien tai tu session
         }
-        if (user == null) {
+        if (user == null) {// neu user chua dang nhap thi chuyen huong den trang login
             httpResponse.sendRedirect(
-                    httpRequest.getContextPath() + "/login"
+                    httpRequest.getContextPath() + "/login" // neu user chua dang nhap thi chuyen huong den trang login
             );
             return;
         }
-        if (!"Admin".equals(user.getRoleName())) {
-            httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN);
+        if (!"Admin".equals(user.getRoleName())) { // neu user hien tai khong phai la admin thi tra ve 403
+            httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN); // neu user khong phai la admin thi tra ve 403
             return;
         }
-        chain.doFilter(request, response);
-    }
+        chain.doFilter(request, response);// cho phep request tiep tuc duoc xu ly
+}
 }

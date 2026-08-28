@@ -20,17 +20,17 @@ import java.util.Arrays;
 import java.util.List;
 import ultis.ValidationUtil;
 
-public class AdminHomestayService {
+public class AdminHomestayService { // service layer cho admin homestay, cung cap cac phuong thuc de tuong tac voi repository layer
 
     private final IAdminHomestayRepository repository;
 
     public AdminHomestayService() {
-        repository = new AdminHomestayRepository();
+        repository = new AdminHomestayRepository();// khoi tao repository layer
     }
 
     public List<Homestay> getHomestays(String keyword, String status) {
         try {
-            return repository.findAll(keyword, status);
+            return repository.findAll(keyword, status);// goi phuong thuc findAll trong repository layer de lay danh sach homestay theo keyword va status
         } catch (SQLException exception) {
             exception.printStackTrace();
             return new ArrayList<Homestay>();

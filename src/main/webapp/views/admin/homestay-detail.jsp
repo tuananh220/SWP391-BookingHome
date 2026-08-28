@@ -12,18 +12,13 @@
                     <title>
                         <c:out value="${homestay.title}" /> | Admin
                     </title>
-                    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalog.css?v=3">
+                    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalog.css?v=8">
                 </head>
 
                 <body class="admin-body">
-                    <aside class="admin-sidebar"><a class="admin-logo"
-                            href="${pageContext.request.contextPath}/admin/dashboard">HOMESTAY<br><span>ADMIN</span></a>
-                        <nav><a href="${pageContext.request.contextPath}/admin/dashboard">Tổng quan</a><a
-                                href="${pageContext.request.contextPath}/admin/users">Tài khoản</a><a class="active"
-                                href="${pageContext.request.contextPath}/admin/homestays">Homestay</a></nav>
-                        <form method="post" action="${pageContext.request.contextPath}/logout"><button>Đăng
-                                xuất</button></form>
-                    </aside>
+                    <jsp:include page="/views/fragments/admin-sidebar.jsp">
+                        <jsp:param name="active" value="homestays"/>
+                    </jsp:include>
                     <main class="admin-main">
                         <header class="admin-page-head">
                             <div>
@@ -47,23 +42,36 @@
                         </c:if>
                         <section class="admin-homestay-overview">
                             <div class="admin-image-strip">
+                                <span class="booking-status status-${homestay.status} admin-image-status">
+                                    <c:out value="${homestay.status}" />
+                                </span>
                                 <c:choose>
                                     <c:when test="${empty homestay.images}">
-                                        <div>Chưa có ảnh</div>
+                                        <div class="admin-image-strip-empty">Chưa có ảnh</div>
                                     </c:when>
                                     <c:otherwise>
-                                        <c:forEach items="${homestay.images}" var="image" begin="0" end="3"><img
-                                                src="<c:out value='${image.imageUrl}'/>" alt="Homestay"></c:forEach>
+                                        <c:forEach items="${homestay.images}" var="image" begin="0" end="3">
+                                            <div class="admin-image-cell">
+                                                <img src="<c:out value='${image.imageUrl}'/>" alt="Homestay">
+                                            </div>
+                                        </c:forEach>
                                     </c:otherwise>
                                 </c:choose>
                             </div>
-                            <div class="admin-home-meta"><span class="booking-status status-${homestay.status}">
-                                    <c:out value="${homestay.status}" />
-                                </span>
+                            <div class="admin-home-meta">
                                 <p>Chủ nhà: <strong>
                                         <c:out value="${homestay.hostName}" />
                                     </strong> ·
                                     <c:out value="${homestay.hostEmail}" />
+                                </p>
+                                <p>Địa chỉ:
+                                    <c:out value="${homestay.address}" />
+                                    <c:if test="${not empty homestay.district}">,
+                                        <c:out value="${homestay.district}" />
+                                    </c:if>
+                                    <c:if test="${not empty homestay.city}">,
+                                        <c:out value="${homestay.city}" />
+                                    </c:if>
                                 </p>
                                 <p>Tiện ích: <c:forEach items="${homestay.amenities}" var="amenity" varStatus="loop">
                                         <c:out value="${amenity.amenityName}" />${loop.last ? '' : ', '}

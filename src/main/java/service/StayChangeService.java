@@ -14,7 +14,6 @@ import entity.StayChangeRequest;
 import interfaces.IStayChangeRepository;
 import repository.StayChangeRepository;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -288,16 +287,8 @@ public class StayChangeService {
                     requested,
                     booking.getCheckOutDate()
             );
-            BigDecimal percent = booking.getPartialRefundPercentSnapshot();
-            BigDecimal refund = percent == null
-                    ? BigDecimal.ZERO
-                    : unusedAmount.multiply(percent).divide(
-                            BigDecimal.valueOf(100),
-                            2,
-                            RoundingMode.HALF_UP
-                    );
             request.setExtraAmount(BigDecimal.ZERO);
-            request.setRefundAmount(refund);
+                request.setRefundAmount(unusedAmount);
         } catch (SQLException exception) {
             exception.printStackTrace();
             throw new IllegalStateException("Không thể tính tiền hoàn.");

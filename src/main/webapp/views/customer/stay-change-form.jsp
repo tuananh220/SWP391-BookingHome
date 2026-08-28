@@ -40,9 +40,8 @@
                     </select>
                 </label>
                 <p class="form-hint">
-                    Khi trả phòng sớm, tiền hoàn dự kiến được tính theo chính sách:
-                    <strong><fmt:formatNumber value="${empty booking.partialRefundPercentSnapshot ? 0 : booking.partialRefundPercentSnapshot}" maxFractionDigits="2"/>%</strong>
-                    trên các đêm chưa sử dụng.<br/>
+                    Khi trả phòng sớm, tiền hoàn dự kiến bằng toàn bộ giá các đêm
+                    chưa sử dụng; không áp dụng phần trăm của chính sách hủy phòng.<br/>
                     Khi gia hạn, hệ thống sẽ tính tiền cần trả thêm theo giá các đêm
                     từ ngày trả phòng hiện tại đến ngày trả phòng mới không áp dụng voucher.
                 </p>
